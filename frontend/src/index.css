@@ -1,47 +1,316 @@
 @import "tailwindcss";
 
+/* ============================================================
+   RAZORREVIVE — MISSION CONTROL, SRIHARIKOTA
+   Tokens. One authority. Every component reads from here.
+   ============================================================ */
+
+@theme {
+  --color-void: #05080F;
+  --color-panel: #0A101C;
+  --color-raise: #0D1524;
+  --color-grid: #12202F;
+  --color-edge: #1C3245;
+  --color-signal: #2EFF7B;
+  --color-signal-dim: #1E7A44;
+  --color-amber: #FFB300;
+  --color-amber-dim: #8F6300;
+  --color-abort: #FF4D4D;
+  --color-abort-dim: #8F2626;
+  --color-text: #CFE4F2;
+  --color-dim: #7C93A6;
+  --color-faint: #6A8296;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  --font-sans: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
 :root {
   color-scheme: dark;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
   margin: 0;
-  background-color: #080D1A;
-  color: #E2E8F0;
+  background-color: #05080F;
+  color: #CFE4F2;
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Custom scrollbar */
+/* Font loading: self-hosted IBM Plex Sans (UI voice) +
+   IBM Plex Mono (telemetry voice), latin subset, no CDN. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/plexsans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/plexsans-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/plexsans-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/plexsans-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/plexmono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/plexmono-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/plexmono-600.woff2") format("woff2");
+}
+
+/* ============================================================
+   MISSION TCO (Thermal Cutaway Orbiter) — ascending node mark
+   ============================================================ */
+
+@keyframes tco-orbit {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -160; }
+}
+
+@keyframes tco-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes launch-sweep {
+  from { background-position: 0% 0%; }
+  to { background-position: 200% 0%; }
+}
+
+@keyframes readout-arrival {
+  0% { opacity: 0; transform: translateY(3px); clip-path: inset(0 100% 0 0); }
+  100% { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+
+/* ============================================================
+   Panel graticule — every major panel carries the etched grid
+   ============================================================ */
+
+.panel-graticule {
+  position: relative;
+  background-color: #0A101C;
+  background-image:
+    linear-gradient(to right, rgba(46, 255, 123, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 255, 123, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border: 1px solid #1C3245;
+}
+
+.panel-graticule::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 70% at 50% -20%, rgba(46, 255, 123, 0.04), transparent 70%);
+}
+
+/* ============================================================
+   Phosphor glow — one depth law, three intensities
+   ============================================================ */
+
+.glow-signal {
+  box-shadow: 0 1px 0 0 rgba(46, 255, 123, 0.25) inset, 0 0 20px -8px rgba(46, 255, 123, 0.28);
+}
+
+.glow-abort {
+  box-shadow: 0 1px 0 0 rgba(255, 77, 77, 0.25) inset, 0 0 20px -8px rgba(255, 77, 77, 0.3);
+}
+
+.glow-amber {
+  box-shadow: 0 1px 0 0 rgba(255, 179, 0, 0.25) inset, 0 0 20px -8px rgba(255, 179, 0, 0.28);
+}
+
+/* Phosphor text — measured readouts only, never body copy */
+.text-phosphor {
+  color: #2EFF7B;
+  text-shadow: 0 0 6px rgba(46, 255, 123, 0.45), 0 0 24px rgba(46, 255, 123, 0.18);
+}
+
+.text-phosphor-amber {
+  color: #FFB300;
+  text-shadow: 0 0 6px rgba(255, 179, 0, 0.4), 0 0 24px rgba(255, 179, 0, 0.15);
+}
+
+.text-phosphor-abort {
+  color: #FF4D4D;
+  text-shadow: 0 0 6px rgba(255, 77, 77, 0.4), 0 0 24px rgba(255, 77, 77, 0.15);
+}
+
+/* ============================================================
+   Scanline sweep for the station tab rail
+   ============================================================ */
+
+.sweep-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.sweep-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(46, 255, 123, 0.06) 50%, transparent 60%);
+  background-size: 200% 100%;
+  animation: launch-sweep 7s linear infinite;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Telemetry readouts — arrival animation, one shared law
+   ============================================================ */
+
+.readout-arrival {
+  animation: readout-arrival 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================================
+   Mission-station inputs, selects, buttons
+   ============================================================ */
+
+.station-input {
+  background-color: #0D1524;
+  border: 1px solid #1C3245;
+  color: #CFE4F2;
+  font-family: var(--font-mono);
+}
+
+.station-input:focus {
+  outline: none;
+  border-color: #2EFF7B;
+  box-shadow: 0 0 0 1px #2EFF7B, 0 0 16px -6px rgba(46, 255, 123, 0.5);
+}
+
+.station-input::placeholder {
+  color: #6A8296;
+}
+
+.station-select {
+  background-color: #0D1524;
+  border: 1px solid #1C3245;
+  color: #CFE4F2;
+  font-family: var(--font-mono);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237C93A6' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.station-select:focus {
+  outline: none;
+  border-color: #2EFF7B;
+}
+
+.station-select option {
+  background-color: #0A101C;
+  color: #CFE4F2;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #2EFF7B;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Ranges safety — the trigger level
+   ============================================================ */
+
+input[type="range"] {
+  accent-color: #2EFF7B;
+}
+
+/* ============================================================
+   Selection, caret, scrollbar — browser surfaces themed
+   ============================================================ */
+
+::selection {
+  background: #2EFF7B;
+  color: #05080F;
+}
+
+.caret-signal {
+  caret-color: #2EFF7B;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0D1527;
+  background: #0A101C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #253861;
-  border-radius: 3px;
+  background: #1C3245;
+  border: 2px solid #0A101C;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #2EFF7B;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+::-webkit-scrollbar-corner {
+  background: #0A101C;
 }
 
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+/* ============================================================
+   Tabular alignment for every measured column
+   ============================================================ */
+
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
-.glow-blue {
-  box-shadow: 0 0 25px -5px rgba(51, 149, 255, 0.35);
+/* Blinking station cursor */
+.station-cursor {
+  animation: tco-blink 1.4s steps(1, end) infinite;
+}
+
+/* Horizontal scroll affordance without a visible bar */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

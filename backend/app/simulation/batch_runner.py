@@ -30,6 +30,9 @@ class BatchSimulationEngine:
         - Generic automated email notification (open rate 18%, CTR 2%)
         - No bank uptime awareness
         - No conversational P2P tracking
+        - No DND / hardship / touch-cap awareness: it keeps calling protected
+          customers. That harassment produces churn, penalties and disputes —
+          not recovery — so those rows contribute zero baseline revenue.
         """
         recovered_total = 0.0
         recovered_count = 0
@@ -37,6 +40,9 @@ class BatchSimulationEngine:
         for txn in batch:
             # Baseline fails completely on checkout drop-offs and hard declines
             if txn.razorpay_error_code in ["CARD_EXPIRED", "FRAUD_DETECTED", "ACCOUNT_CLOSED"]:
+                continue
+            # Customers the naive loop keeps harassing never pay again this cycle
+            if txn.customer.is_dnd or txn.customer.is_hardship or txn.attempts_made >= 3:
                 continue
             if txn.channel == "MAGIC_CHECKOUT":
                 # Naive email cart abandonment has ~5% conversion
@@ -74,7 +80,9 @@ class BatchSimulationEngine:
         baseline_rate = (baseline_recovered / total_at_risk * 100.0) if total_at_risk > 0 else 0.0
 
         # 2. Run RazorRevive Agentic Orchestration
-        audit_logger.clear()  # fresh batch audit view
+        # The audit ledger is append-only: webhook-fired decisions survive
+        # batch runs (the immutable trail stays immutable). Metrics below are
+        # computed only from this batch's entries.
         
         # Process transactions concurrently in batches of 20
         # Simulate active operational hours (11:30 AM IST) for batch performance measurement

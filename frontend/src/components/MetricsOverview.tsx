@@ -1,94 +1,161 @@
-import { IndianRupee, TrendingUp, ShieldAlert, Sparkles, ArrowUpRight } from 'lucide-react';
 import type { BatchSummary } from '../services/api';
+import { StationHeader, formatINR, StatusLamp, INK } from './telemetry';
+import { TrendingUp, ShieldAlert } from 'lucide-react';
+
+/* ============================================================
+   VEHICLE STATUS BOARD
+   Four phosphor readouts on one graticule wall — not icon
+   cards. Awaiting data shows dim dashes; arrival animates in.
+   A dead uplink never reads as zero recovery: it reads as
+   SIGNAL LOST.
+   ============================================================ */
 
 interface MetricsProps {
   summary: BatchSummary | null;
   loading: boolean;
 }
 
+type ReadoutField = 'risk' | 'recovered' | 'lift' | 'roi';
+
+const Readout = ({
+  code,
+  label,
+  value,
+  sub,
+  lamp,
+  accent,
+  loading,
+  field,
+}: {
+  code: string;
+  label: string;
+  value: string;
+  sub?: React.ReactNode;
+  lamp?: boolean;
+  accent?: 'signal' | 'amber';
+  loading: boolean;
+  field: ReadoutField;
+}) => (
+  <div className="relative px-5 py-5">
+    <div className="flex items-center justify-between">
+      <span className="numeric text-[9px] tracking-[0.22em] text-[#6A8296]">{code}</span>
+      {lamp && (
+        <span className="flex items-center gap-1.5">
+          <StatusLamp on={!loading} ink={accent === 'amber' ? INK.amber : INK.signal} />
+          <span className="numeric text-[9px] tracking-widest text-[#6A8296]">{loading ? 'ACQ' : 'LOCK'}</span>
+        </span>
+      )}
+    </div>
+
+    <div
+      className={`mt-3 text-[26px] sm:text-[30px] numeric leading-none tracking-tight ${
+        accent === 'amber'
+          ? 'text-phosphor-amber'
+          : accent === 'signal'
+            ? 'text-phosphor'
+            : 'text-[#CFE4F2]'
+      }`}
+      title={label}
+    >
+      {loading ? (
+        <span className="text-[#6A8296]">-- --- ---</span>
+      ) : (
+        <span key={field} className="readout-arrival inline-block">
+          {value}
+        </span>
+      )}
+    </div>
+
+    <div className="mt-2.5 text-xs text-[#7C93A6] leading-relaxed">{label}</div>
+    {sub && <div className="mt-2 text-[11px] numeric text-[#7C93A6]">{sub}</div>}
+  </div>
+);
+
+const SignalLost = () => (
+  <div className="px-5 py-10 text-center">
+    <div className="numeric text-[11px] tracking-[0.2em] text-[#FF4D4D]">SIGNAL LOST · TELEMETRY DOWNLINK OFFLINE</div>
+    <p className="text-xs text-[#7C93A6] mt-2 leading-relaxed">
+      The audit ledger is not answering. No readouts are shown so that a dead backend never reads as zero recovery.
+    </p>
+    <p className="numeric text-[10px] text-[#6A8296] mt-2 tracking-wider">VERIFY BACKEND ON :8000 AND RELOAD</p>
+  </div>
+);
+
 export const MetricsOverview = ({ summary, loading }: MetricsProps) => {
-  const formatINR = (val?: number) => {
-    if (val === undefined || isNaN(val)) return '₹0';
-    return '₹' + Math.round(val).toLocaleString('en-IN');
-  };
+  const guardrailStops = summary?.guardrail_stops_count ?? 0;
+  const aiWin = summary?.recovery_rate_ai?.toFixed(1) ?? '—';
+  const baseWin = summary?.recovery_rate_baseline?.toFixed(1) ?? '—';
+  const lost = !loading && !summary;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {/* Card 1: Revenue at Risk */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-xl p-4 relative overflow-hidden">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-wider">Revenue at Risk</span>
-          <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400">
-            <IndianRupee className="w-4 h-4" />
+    <section aria-label="Mission readouts" className="panel-graticule">
+      <StationHeader
+        code="VEHICLE STATUS · RRV-01"
+        title="Recovery Vehicle Telemetry"
+        subtitle="Live totals from the in-memory audit ledger. Every rupee traces to a logged decision with diagnosis, compliance certification, and settlement reference."
+        right={
+          <div className="numeric text-[10px] text-[#6A8296] tracking-wider text-right">
+            <div>BATCH {summary?.batch_id?.slice(0, 8) ?? '—'}</div>
+            <div className="mt-1">{summary?.total_transactions ?? 0} EVENTS</div>
           </div>
+        }
+      />
+      {lost ? (
+        <SignalLost />
+      ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#1C3245]">
+        <Readout
+          field="risk"
+          code="READOUT 01 · AT RISK"
+          label={`Revenue at risk across ${summary?.total_transactions ?? 0} failed payments, mandate debits and drop-offs`}
+          value={formatINR(summary?.total_revenue_at_risk)}
+          loading={loading}
+        />
+        <Readout
+          field="recovered"
+          code="READOUT 02 · RECOVERED"
+          label="Won back by the AI stack — sequencer, Hinglish agent, magic links"
+          value={formatINR(summary?.total_recovered_ai)}
+          sub={
+            <span>
+              <span className="text-[#2EFF7B]">{aiWin}%</span> win rate vs{' '}
+              <span className="text-[#CFE4F2]">{baseWin}%</span> naive dunning
+            </span>
+          }
+          accent="signal"
+          lamp
+          loading={loading}
+        />
+        <Readout
+          field="lift"
+          code="READOUT 03 · INCREMENTAL"
+          label="Additional revenue beyond what blind 3-retry dunning would have recovered"
+          value={`+${formatINR(summary?.incremental_lift_rupees)}`}
+          sub={
+            <span className="flex items-center gap-1.5 text-[#2EFF7B]">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>+{summary?.lift_percentage?.toFixed(0) ?? 0}% lift over baseline</span>
+            </span>
+          }
+          loading={loading}
+        />
+        <Readout
+          field="roi"
+          code="READOUT 04 · ROI"
+          label={`Economic return on agent operating cost of ${formatINR(summary?.total_operational_cost)}`}
+          value={`${summary?.roi_multiplier?.toFixed(0) ?? 0}— ROI`}
+          sub={
+            <span className="flex items-center gap-1.5 text-[#FF4D4D]">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>{guardrailStops} range-safety stops correctly fired</span>
+            </span>
+          }
+          accent="amber"
+          lamp
+          loading={loading}
+        />
         </div>
-        <div className="text-2xl font-bold text-white tracking-tight">
-          {loading ? '...' : formatINR(summary?.total_revenue_at_risk)}
-        </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400 space-x-1.5">
-          <span>Across</span>
-          <span className="text-white font-medium">{summary?.total_transactions || 0}</span>
-          <span>failed transactions / drop-offs</span>
-        </div>
-      </div>
-
-      {/* Card 2: Revenue Recovered by AI */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-xl p-4 relative overflow-hidden glow-emerald">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center space-x-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Money Recovered (AI)</span>
-          </span>
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-        </div>
-        <div className="text-2xl font-bold text-emerald-400 tracking-tight">
-          {loading ? '...' : formatINR(summary?.total_recovered_ai)}
-        </div>
-        <div className="mt-2 flex items-center text-xs text-emerald-300/80 space-x-2">
-          <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 font-semibold rounded text-[11px]">
-            {summary?.recovery_rate_ai.toFixed(1) || '0.0'}% Win Rate
-          </span>
-          <span className="text-slate-400">vs {summary?.recovery_rate_baseline.toFixed(1) || '0.0'}% Baseline</span>
-        </div>
-      </div>
-
-      {/* Card 3: Incremental Lift vs Baseline */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-xl p-4 relative overflow-hidden">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">Incremental Win-Back</span>
-          <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
-            <ArrowUpRight className="w-4 h-4" />
-          </div>
-        </div>
-        <div className="text-2xl font-bold text-blue-400 tracking-tight">
-          {loading ? '...' : `+${formatINR(summary?.incremental_lift_rupees)}`}
-        </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400 space-x-1.5">
-          <span className="text-emerald-400 font-semibold">+{summary?.lift_percentage.toFixed(0) || '0'}%</span>
-          <span>lift over blind naive dunning</span>
-        </div>
-      </div>
-
-      {/* Card 4: Net ROI & Guardrail Protection */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-xl p-4 relative overflow-hidden">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">Economic ROI</span>
-          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-            <ShieldAlert className="w-4 h-4" />
-          </div>
-        </div>
-        <div className="text-2xl font-bold text-amber-400 tracking-tight">
-          {loading ? '...' : `${summary?.roi_multiplier.toFixed(0) || '0'}x ROI`}
-        </div>
-        <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-          <span>Cost: {formatINR(summary?.total_operational_cost)}</span>
-          <span className="px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded text-[10px] font-medium">
-            {summary?.guardrail_stops_count || 0} Guardrail Stops
-          </span>
-        </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 };

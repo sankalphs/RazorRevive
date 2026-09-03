@@ -1,6 +1,14 @@
 import { useState, useEffect, Fragment } from 'react';
-import { Shield, Search, Download, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { type AuditLogEntry, fetchAuditTrail } from '../services/api';
+import { StationHeader, formatINR, StatusReadout, ComplianceReadout, stateInk } from './telemetry';
+
+/* ============================================================
+   STA-04 · MISSION LOG
+   The immutable ledger as a flight log: mono row stamps,
+   one ink per state, expandable decision record showing the
+   diagnosis, the compliance certification, and the settlement.
+   ============================================================ */
 
 export const AuditTrailTable = () => {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
@@ -18,155 +26,112 @@ export const AuditTrailTable = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Audit trail load error:', err);
+        console.error('Mission log error:', err);
         setLoading(false);
       });
   }, [statusFilter, interventionFilter]);
 
-  const toggleRow = (id: string) => {
-    setExpandedRow(expandedRow === id ? null : id);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'RECOVERED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1">
-            <CheckCircle className="w-3 h-3" />
-            <span>Recovered</span>
-          </span>
-        );
-      case 'STOPPED_GUARDRAIL':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center space-x-1">
-            <XCircle className="w-3 h-3" />
-            <span>Stopped (Guardrail)</span>
-          </span>
-        );
-      case 'P2P_SCHEDULED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center space-x-1">
-            <Clock className="w-3 h-3" />
-            <span>P2P Scheduled</span>
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
-            {status}
-          </span>
-        );
-    }
+  const applySearch = () => {
+    setLoading(true);
+    fetchAuditTrail(statusFilter, interventionFilter, search)
+      .then((data) => {
+        setEntries(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Mission log error:', err);
+        setLoading(false);
+      });
   };
 
   return (
-    <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6 shadow-xl space-y-4">
-      {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h2 className="text-base font-bold text-white flex items-center space-x-2">
-            <Shield className="w-5 h-5 text-emerald-400" />
-            <span>Compliance &amp; Recovery Audit Ledger</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Immutable, chronological decision logs of every recovery intervention, LLM diagnosis, and compliance certification.
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search txn ID or merchant..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setLoading(true);
-                  fetchAuditTrail(statusFilter, interventionFilter, search)
-                    .then((data) => {
-                      setEntries(data);
-                      setLoading(false);
-                    })
-                    .catch((err) => {
-                      console.error('Audit trail load error:', err);
-                      setLoading(false);
-                    });
-                }
-              }}
-              className="bg-[#162238] border border-[#1E2E52] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3395FF]"
-            />
-          </div>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#162238] border border-[#1E2E52] rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-[#3395FF]"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="RECOVERED">Recovered</option>
-            <option value="STOPPED_GUARDRAIL">Stopped (Guardrail)</option>
-            <option value="P2P_SCHEDULED">P2P Scheduled</option>
-            <option value="IN_PROGRESS">In Progress</option>
-          </select>
-
-          {/* Intervention Filter */}
-          <select
-            value={interventionFilter}
-            onChange={(e) => setInterventionFilter(e.target.value)}
-            className="bg-[#162238] border border-[#1E2E52] rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-[#3395FF]"
-          >
-            <option value="ALL">All Interventions</option>
-            <option value="SMART_MANDATE_RETRY">Mandate Retry</option>
-            <option value="HINGLISH_VOICE_P2P">Hinglish Voice P2P</option>
-            <option value="WHATSAPP_MAGIC_LINK">WhatsApp Link</option>
-            <option value="CHECKOUT_DYNAMIC_OFFER">Dynamic Offer</option>
-            <option value="B2B_COMPLIANT_DUNNING">B2B Dunning</option>
-            <option value="HARD_STOP_NO_ACTION">Hard Stop</option>
-          </select>
-
-          {/* CSV Download Button */}
+    <section className="panel-graticule" aria-label="Compliance audit ledger">
+      <StationHeader
+        code="STA-04 · MISSION LOG"
+        title="Compliance & Recovery Audit Ledger"
+        subtitle="Immutable, chronological record of every recovery decision: LLM root-cause diagnosis, guardrail certification, and settlement reference. Append-only; exportable as evidence."
+        right={
           <a
             href="/api/audit/csv"
             download
-            className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#162238] hover:bg-[#1E2E52] border border-[#1E2E52] text-xs font-semibold text-slate-200 rounded-xl transition-colors"
+            className="numeric text-[10px] tracking-wider border border-[#1C3245] text-[#7C93A6] hover:text-[#2EFF7B] hover:border-[#2EFF7B]/60 px-3 py-2 transition-colors flex items-center gap-2"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export CSV</span>
+            <Download className="w-3.5 h-3.5" />
+            EXPORT CSV
           </a>
+        }
+      />
+
+      {/* Log filters */}
+      <div className="border-b border-[#1C3245] px-4 sm:px-5 py-3 flex flex-wrap items-center gap-2.5">
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6A8296]" />
+          <input
+            type="text"
+            placeholder="QUERY TXN ID / MERCHANT"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+            className="station-input pl-8 pr-3 py-1.5 text-[11px] w-56 caret-signal"
+          />
         </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="station-select px-3 py-1.5 text-[11px]"
+          aria-label="Filter by status"
+        >
+          <option value="ALL">ALL STATES</option>
+          <option value="RECOVERED">RECOVERED</option>
+          <option value="STOPPED_GUARDRAIL">RANGE STOP</option>
+          <option value="P2P_SCHEDULED">P2P LOCKED</option>
+          <option value="IN_PROGRESS">IN PROGRESS</option>
+        </select>
+        <select
+          value={interventionFilter}
+          onChange={(e) => setInterventionFilter(e.target.value)}
+          className="station-select px-3 py-1.5 text-[11px]"
+          aria-label="Filter by intervention"
+        >
+          <option value="ALL">ALL INTERVENTIONS</option>
+          <option value="SMART_MANDATE_RETRY">MANDATE RETRY</option>
+          <option value="HINGLISH_VOICE_P2P">HINGLISH VOICE P2P</option>
+          <option value="WHATSAPP_MAGIC_LINK">WHATSAPP LINK</option>
+          <option value="CHECKOUT_DYNAMIC_OFFER">DYNAMIC OFFER</option>
+          <option value="B2B_COMPLIANT_DUNNING">B2B DUNNING</option>
+          <option value="HARD_STOP_NO_ACTION">HARD STOP</option>
+        </select>
+        <span className="numeric text-[10px] text-[#6A8296] tracking-wider ml-auto">
+          {loading ? 'SYNCING…' : `${entries.length} RECORDS`}
+        </span>
       </div>
 
-      {/* Audit Log Table */}
-      <div className="overflow-x-auto border border-[#1E2E52] rounded-xl">
-        <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-[#0D1527] text-slate-400 uppercase text-[10px] font-semibold tracking-wider border-b border-[#1E2E52]">
-            <tr>
-              <th className="px-4 py-3">Transaction ID</th>
-              <th className="px-4 py-3">Merchant</th>
-              <th className="px-4 py-3">Amount at Risk</th>
-              <th className="px-4 py-3">Intervention Type</th>
-              <th className="px-4 py-3">Compliance Check</th>
-              <th className="px-4 py-3">Final Status</th>
-              <th className="px-4 py-3">Amount Recovered</th>
-              <th className="px-4 py-3 text-right">Details</th>
+      {/* Telemetry table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead>
+            <tr className="bg-[#0D1524] numeric text-[9px] tracking-[0.18em] text-[#6A8296] border-b border-[#1C3245]">
+              <th className="px-4 py-2.5 font-medium">TXN</th>
+              <th className="px-4 py-2.5 font-medium">MERCHANT</th>
+              <th className="px-4 py-2.5 font-medium text-right">AT RISK</th>
+              <th className="px-4 py-2.5 font-medium">INTERVENTION</th>
+              <th className="px-4 py-2.5 font-medium">GUARDRAIL</th>
+              <th className="px-4 py-2.5 font-medium">STATE</th>
+              <th className="px-4 py-2.5 font-medium text-right">RECOVERED</th>
+              <th className="px-4 py-2.5 font-medium text-right sr-only">Details</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1E2E52]">
+          <tbody className="divide-y divide-[#12202F]">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                  Loading audit trail records...
+                <td colSpan={8} className="px-4 py-10 text-center numeric text-[11px] text-[#6A8296] tracking-wider">
+                  ACQUIRING LOG RECORDS…
                 </td>
               </tr>
             ) : entries.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                  No audit trail records found. Execute a batch simulation or fire a webhook to generate logs.
+                <td colSpan={8} className="px-4 py-10 text-center numeric text-[11px] text-[#6A8296] tracking-wider">
+                  LOG EMPTY · EXECUTE A BATCH LAUNCH OR DISPATCH A WEBHOOK TO GENERATE RECORDS
                 </td>
               </tr>
             ) : (
@@ -174,100 +139,94 @@ export const AuditTrailTable = () => {
                 const isExpanded = expandedRow === e.id;
                 return (
                   <Fragment key={e.id}>
-                    <tr className="hover:bg-[#162238]/50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-[11px] text-blue-400">{e.transaction_id}</td>
-                      <td className="px-4 py-3 font-medium text-white">{e.merchant_name}</td>
-                      <td className="px-4 py-3 font-bold text-white">₹{e.amount_at_risk.toLocaleString('en-IN')}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[11px] text-slate-300">
-                          {e.intervention.replace(/_/g, ' ')}
-                        </span>
+                    <tr className={`transition-colors ${isExpanded ? 'bg-[#2EFF7B]/[0.03]' : 'hover:bg-[#0D1524]/80'}`}>
+                      <td className="px-4 py-2.5 numeric text-[11px] text-[#2EFF7B]">{e.transaction_id}</td>
+                      <td className="px-4 py-2.5 text-[#CFE4F2]">{e.merchant_name}</td>
+                      <td className="px-4 py-2.5 numeric text-right text-[#CFE4F2]">
+                        {formatINR(e.amount_at_risk)}
                       </td>
-                      <td className="px-4 py-3">
-                        {e.compliance.is_compliant ? (
-                          <span className="text-emerald-400 flex items-center space-x-1">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>Passed</span>
-                          </span>
-                        ) : (
-                          <span className="text-rose-400 flex items-center space-x-1">
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>Guardrail Triggered</span>
-                          </span>
-                        )}
+                      <td className="px-4 py-2.5 numeric text-[10px] tracking-wider text-[#7C93A6]">
+                        {e.intervention.replace(/_/g, ' ')}
                       </td>
-                      <td className="px-4 py-3">{getStatusBadge(e.final_status)}</td>
-                      <td className="px-4 py-3 font-bold text-emerald-400">
-                        {e.amount_recovered > 0 ? `₹${e.amount_recovered.toLocaleString('en-IN')}` : '—'}
+                      <td className="px-4 py-2.5">
+                        <ComplianceReadout ok={e.compliance.is_compliant} />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-2.5">
+                        <StatusReadout status={e.final_status} />
+                      </td>
+                      <td className="px-4 py-2.5 numeric text-right text-[#2EFF7B]">
+                        {e.amount_recovered > 0 ? formatINR(e.amount_recovered) : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
                         <button
-                          onClick={() => toggleRow(e.id)}
-                          className="p-1 rounded hover:bg-[#1E2E52] text-slate-400 hover:text-white transition-colors"
+                          onClick={() => setExpandedRow(isExpanded ? null : e.id)}
+                          aria-expanded={isExpanded}
+                          aria-label={isExpanded ? 'Collapse decision record' : 'Expand decision record'}
+                          className="p-1 text-[#6A8296] hover:text-[#2EFF7B] transition-colors"
                         >
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                       </td>
                     </tr>
 
-                    {/* Expandable Decision Drawer */}
+                    {/* Decision record */}
                     {isExpanded && (
-                      <tr className="bg-[#0A1020]/90">
-                        <td colSpan={8} className="px-6 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                            {/* Diagnosis Box */}
-                            <div className="p-3 rounded-xl bg-[#162238] border border-[#1E2E52] space-y-1">
-                              <div className="font-bold text-white flex items-center space-x-1.5 mb-1 text-[11px] uppercase tracking-wider text-purple-400">
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>AI Root-Cause Diagnosis</span>
+                      <tr className="bg-[#05080F]/70">
+                        <td colSpan={8} className="px-4 sm:px-6 py-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {/* Diagnosis */}
+                            <div className="border border-[#1C3245] bg-[#0D1524]/60 px-3.5 py-3">
+                              <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">
+                                DIAGNOSIS · {e.diagnosis.category}
                               </div>
-                              <p className="text-slate-300">
-                                <strong>Category:</strong> {e.diagnosis.category}
-                              </p>
-                              <p className="text-slate-300">
-                                <strong>Root Cause:</strong> {e.diagnosis.root_cause}
-                              </p>
-                              <p className="text-slate-400 text-[11px] italic">
-                                "{e.diagnosis.ai_reasoning}"
+                              <div className="text-[11px] text-[#CFE4F2] leading-relaxed">{e.diagnosis.root_cause}</div>
+                              <p className="numeric text-[10px] text-[#6A8296] leading-relaxed mt-2 border-t border-[#1C3245] pt-2">
+                                {e.diagnosis.ai_reasoning}
                               </p>
                             </div>
 
-                            {/* Compliance Box */}
-                            <div className="p-3 rounded-xl bg-[#162238] border border-[#1E2E52] space-y-1">
-                              <div className="font-bold text-white flex items-center space-x-1.5 mb-1 text-[11px] uppercase tracking-wider text-blue-400">
-                                <Shield className="w-3.5 h-3.5" />
-                                <span>Compliance Certification</span>
+                            {/* Compliance certification */}
+                            <div className="border border-[#1C3245] bg-[#0D1524]/60 px-3.5 py-3">
+                              <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">
+                                COMPLIANCE CERTIFICATION
                               </div>
-                              <p className="text-slate-300">
-                                <strong>RBI Hours (08-19 IST):</strong>{' '}
-                                {e.compliance.rbi_hours_ok ? 'Compliant' : 'Deferred'}
+                              <div className="space-y-1.5 numeric text-[10px]">
+                                {[
+                                  { label: 'RBI HOURS 08—19 IST', ok: e.compliance.rbi_hours_ok },
+                                  { label: 'TOUCHPOINT ↤3 / 7D', ok: e.compliance.within_touch_limit },
+                                  { label: 'NO HARD DECLINE', ok: e.compliance.not_hard_declined },
+                                  { label: 'DND / HARDSHIP CLEAR', ok: e.compliance.dnd_clear },
+                                  { label: 'DISPUTE CLEAR', ok: e.compliance.dispute_clear },
+                                ].map((check) => (
+                                  <div key={check.label} className="flex items-center justify-between">
+                                    <span className="text-[#7C93A6]">{check.label}</span>
+                                    <ComplianceReadout ok={Boolean(check.ok)} />
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-[10px] text-[#6A8296] leading-relaxed mt-2 border-t border-[#1C3245] pt-2">
+                                {e.compliance.reason}
                               </p>
-                              <p className="text-slate-300">
-                                <strong>Touchpoint Ceiling:</strong>{' '}
-                                {e.compliance.within_touch_limit ? 'Within limit (<3)' : 'Exhausted'}
-                              </p>
-                              <p className="text-slate-300">
-                                <strong>DND &amp; Hardship:</strong>{' '}
-                                {e.compliance.dnd_clear && e.compliance.dispute_clear ? 'Clear' : 'Suppressed'}
-                              </p>
-                              <p className="text-[11px] text-slate-400">{e.compliance.reason}</p>
                             </div>
 
-                            {/* Action & Settlement Box */}
-                            <div className="p-3 rounded-xl bg-[#162238] border border-[#1E2E52] space-y-1">
-                              <div className="font-bold text-white flex items-center space-x-1.5 mb-1 text-[11px] uppercase tracking-wider text-emerald-400">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                <span>Settlement Reference</span>
+                            {/* Settlement */}
+                            <div className="border border-[#1C3245] bg-[#0D1524]/60 px-3.5 py-3">
+                              <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">
+                                SETTLEMENT
                               </div>
-                              <p className="text-slate-300 font-mono text-[11px]">
-                                {e.settlement_ref ? e.settlement_ref : 'No settlement (Stopped / Pending)'}
-                              </p>
-                              <p className="text-slate-300">
-                                <strong>Operational Cost:</strong> ₹{e.cost_incurred.toFixed(2)}
-                              </p>
-                              <p className="text-slate-400 text-[11px]">
-                                Timestamp: {e.timestamp}
-                              </p>
+                              <div className={`numeric text-[11px] ${stateInk(e.final_status).phosphor || 'text-[#CFE4F2]'}`}>
+                                {e.settlement_ref ?? 'NONE · STOPPED OR PENDING'}
+                              </div>
+                              <div className="space-y-1.5 numeric text-[10px] text-[#7C93A6] mt-3 border-t border-[#1C3245] pt-2">
+                                <div className="flex justify-between">
+                                  <span>OPERATING COST</span>
+                                  <span className="text-[#CFE4F2]">₹{e.cost_incurred.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>LOGGED AT</span>
+                                  <span className="text-[#CFE4F2]">{e.timestamp}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -280,6 +239,6 @@ export const AuditTrailTable = () => {
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };

@@ -137,6 +137,14 @@ Classify into exactly one Category:
 Select exactly one Recommended Action:
 ["SMART_MANDATE_RETRY", "HINGLISH_VOICE_P2P", "WHATSAPP_MAGIC_LINK", "CHECKOUT_DYNAMIC_OFFER", "B2B_COMPLIANT_DUNNING", "HARD_STOP_NO_ACTION"]
 
+For known Razorpay error codes, use this canonical mapping unless the transaction data clearly contradicts it:
+- Gateway/switch/timeout codes (GATEWAY_ERROR, BANK_DEBIT_FAILED_TECHNICAL, NPCI_TIMEOUT) -> TRANSIENT_TECHNICAL + SMART_MANDATE_RETRY
+- INSUFFICIENT_FUNDS -> SOFT_FINANCIAL + HINGLISH_VOICE_P2P (empathetic conversation beats a blind retry on an empty account)
+- UPI_DAILY_LIMIT_EXCEEDED / MANDATE_AMOUNT_EXCEEDS_CAP -> SOFT_FINANCIAL + WHATSAPP_MAGIC_LINK
+- CARD_EXPIRED / ACCOUNT_CLOSED / FRAUD_DETECTED / STOLEN_CARD / revoked mandates -> HARD_PERMANENT + HARD_STOP_NO_ACTION (never retry)
+- Checkout drop-offs / cart abandonment on MAGIC_CHECKOUT -> BEHAVIORAL_DROPOFF + CHECKOUT_DYNAMIC_OFFER
+- B2B invoice overdue / approval delays -> COMMERCIAL_DISPUTE + B2B_COMPLIANT_DUNNING
+
 Respond strictly in valid JSON without markdown formatting:
 {{
   "category": "TRANSIENT_TECHNICAL",
@@ -149,7 +157,7 @@ Respond strictly in valid JSON without markdown formatting:
 """
 
     try:
-        async with httpx.AsyncClient(timeout=4.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.post(
                 f"{GMI_BASE_URL}/chat/completions",
                 headers={

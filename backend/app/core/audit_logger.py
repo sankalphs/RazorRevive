@@ -32,7 +32,8 @@ class AuditLogger:
         intervention: Optional[InterventionType] = None,
         category: Optional[FailureCategory] = None,
         search: Optional[str] = None,
-        limit: int = 100
+        limit: int = 100,
+        offset: int = 0
     ) -> List[AuditLogEntry]:
         results = []
         search_lower = search.lower() if search else None
@@ -51,10 +52,8 @@ class AuditLogger:
                 if not (match_id or match_merch or match_event):
                     continue
             results.append(entry)
-            if len(results) >= limit:
-                break
 
-        return results
+        return results[offset : offset + limit]
 
     def export_csv(self) -> str:
         """Exports full audit trail as an RFC-4180 compliant CSV string."""

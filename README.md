@@ -66,7 +66,7 @@ flowchart TD
 | Hinglish Agent + P2P Tracker | `backend/app/interventions/hinglish_agent.py` | Bilingual conversational recovery; extracts promises like *"Kal shaam 5 baje"*, freezes dunning, schedules polite reminders; handles disputes/DND gracefully |
 | Checkout Drop-Off Rescuer | `backend/app/interventions/checkout_rescuer.py` | Margin-bounded dynamic incentives (5–7% capped, free shipping) with 3-hour expiry links |
 | B2B Receivables Chaser | `backend/app/interventions/b2b_chaser.py` | 3-stage escalation ladder with Razorpay Smart Collect virtual accounts and split-payment options |
-| Batch Simulation Engine | `backend/app/simulation/` | Realistic Indian merchant batches (50–500 txns), side-by-side **Baseline vs RazorRevive** with rigorous accounting |
+| Batch Simulation Engine | `backend/app/simulation/` | Realistic Indian merchant batches (50–500 txns), channel-coherent failure presets, side-by-side **Baseline vs RazorRevive** with rigorous accounting |
 | Immutable Audit Ledger | `backend/app/core/audit_logger.py` | Every decision chain logged: diagnosis, compliance certification, intervention, settlement ref; one-click CSV export |
 
 ## 3. Quick Start
@@ -113,7 +113,7 @@ If the key is missing or the LLM times out, the deterministic heuristic engine t
 
 ## 4. The Dashboard
 
-1. **Batch Simulator & ROI** — Configure batch size (50–500) and vertical mix (SaaS / D2C / B2B / OTT). Run side-by-side Baseline (~19% win rate) vs RazorRevive (~74% win rate) and watch measured ₹ recovered, incremental lift, operating cost, and ROI.
+1. **Batch Simulator & ROI** — Configure batch size (50–500) and vertical mix (SaaS / D2C / B2B / OTT). Run side-by-side Baseline vs RazorRevive and watch measured ₹ recovered, incremental lift, operating cost, and ROI. On a representative mixed batch the AI stack recovers ~50% of at-risk revenue vs ~15% for naive blind dunning (measured across 20 seeded batches; single runs vary with batch composition).
 2. **Hinglish Voice & P2P Agent** — Live chat with "Priya". Try *"Kal shaam 6 baje payment karunga"* and watch the Promise-to-Pay tracker extract the date, freeze dunning, and schedule the reminder. Play Hinglish audio via Web Speech API.
 3. **Mandate Sequencer & Bank Health** — Live issuer uptime grid (HDFC 99.4% vs SBI 78.2%) plus a naive-vs-smart retry timeline.
 4. **Compliance Audit Ledger** — Filterable immutable decision logs; expand any row for full LLM reasoning and compliance certification; export CSV.
@@ -148,7 +148,7 @@ Interactive docs: `http://127.0.0.1:8000/docs`
 
 ## 7. Verification
 
-### Automated tests (16 tests)
+### Automated tests (23 tests)
 
 ```bash
 python -m pytest backend/tests -v
@@ -157,11 +157,11 @@ python -m pytest backend/tests -v
 - `test_diagnostics.py` — classification accuracy across all 5 failure categories
 - `test_guardrails.py` — RBI hours, hard stops, DND, hardship, touch ceiling
 - `test_p2p_tracker.py` — Hinglish intent extraction & promise date parsing
-- `test_batch_simulation.py` — accounting integrity: recovered ≤ at-risk, AI ≥ baseline, audit counts
+- `test_batch_simulation.py` — accounting integrity, channel coherence, baseline harassment rules, audit counts
 
 ### Manual demo flow
 1. `python run.py` → dashboard opens
-2. Run **100-txn batch** → observe ~₹ lakhs recovered, ~74% vs ~19% lift
+2. Run **100-txn batch** → observe ~₹ lakhs at risk, AI stack recovering roughly 3× the naive baseline, guardrail stops celebrated as range-safety
 3. Chat with the Hinglish agent → reply *"Kal subah 10 baje salary aayegi tab bhej dena"* → P2P tracker schedules the reminder
 4. Audit tab → filter "Stopped (Guardrail)" → confirm zero dunning on stolen-card cases → download CSV
 5. Webhook sandbox → fire `payment.failed` → watch immediate diagnosis + action
@@ -189,7 +189,7 @@ RevenueRecovery/
 │   │   ├── simulation/       # generator + baseline-vs-AI runner
 │   │   ├── models/schemas.py # Pydantic contracts
 │   │   └── api/              # batch, agent, webhook, audit routes
-│   └── tests/                # 16 pytest cases
+│   └── tests/                # 23 pytest cases
 └── frontend/
     └── src/
         ├── App.tsx           # Executive dashboard shell

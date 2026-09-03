@@ -1,18 +1,36 @@
-import { useState } from 'react';
-import { Play, RotateCcw, Zap, Sparkles, CheckCircle2, AlertOctagon, TrendingUp, ShieldCheck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Play, RotateCw, Cpu, CheckCircle2, MinusCircle } from 'lucide-react';
 import { type BatchSummary, runBatchSimulation } from '../services/api';
+import { StationHeader, formatINR, INK, StatusLamp } from './telemetry';
+
+/* ============================================================
+   STA-01 · LAUNCH COUNTDOWN
+   The batch run as a terminal count. Switches are hardware
+   guards: batch size, verticals, LLM diagnostician. GO/NO-GO
+   is decided by the range, not the visitor.
+   ============================================================ */
 
 interface BatchSimulatorProps {
   summary: BatchSummary | null;
   onSimulationComplete: (newSummary: BatchSummary) => void;
 }
 
-export const BatchSimulator: React.FC<BatchSimulatorProps> = ({ summary, onSimulationComplete }) => {
-  const [batchSize, setBatchSize] = useState<number>(100);
+const COUNTDOWN_PHASES: { t: string; call: string }[] = [
+  { t: 'T-10s', call: 'SWITCH TO INTERNAL POWER' },
+  { t: 'T-08s', call: 'DIAGNOSTICIAN SPOOLING · MINIMAX-M3' },
+  { t: 'T-06s', call: 'GUARDRAIL ARMING · RBI CONTACT HOURS' },
+  { t: 'T-04s', call: 'BANK HEALTH RADAR · SAMPLING ISSUERS' },
+  { t: 'T-02s', call: 'SEQUENCER LOCKED · PAYLOAD ARMED' },
+  { t: 'T-00s', call: 'IGNITION · BATCH DISPATCHED' },
+];
+
+export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulatorProps) => {
+  const [batchSize, setBatchSize] = useState(100);
   const [verticals, setVerticals] = useState<string[]>(['SaaS', 'D2C', 'B2B', 'OTT']);
-  const [useLLM, setUseLLM] = useState<boolean>(true);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0);
+  const [useLLM, setUseLLM] = useState(true);
+  const [isRunning, setIsRunning] = useState(false);
+  const [countdown, setCountdown] = useState<{ t: string; call: string } | null>(null);
+  const runRef = useRef(0);
 
   const toggleVertical = (v: string) => {
     if (verticals.includes(v)) {
@@ -22,270 +40,265 @@ export const BatchSimulator: React.FC<BatchSimulatorProps> = ({ summary, onSimul
     }
   };
 
-  const handleRun = async () => {
-    setIsRunning(true);
-    setProgress(15);
-    try {
-      const timer = setInterval(() => {
-        setProgress((prev) => (prev < 90 ? prev + 15 : prev));
-      }, 250);
+  useEffect(() => {
+    if (!isRunning || !countdown) return;
+    const id = setTimeout(() => {
+      setCountdown((current) => {
+        const idx = current ? COUNTDOWN_PHASES.findIndex((p) => p.t === current.t) : -1;
+        return idx >= 0 && idx < COUNTDOWN_PHASES.length - 1 ? COUNTDOWN_PHASES[idx + 1] : null;
+      });
+    }, 420);
+    return () => clearTimeout(id);
+  }, [countdown, isRunning]);
 
+  const handleLaunch = async () => {
+    if (isRunning) return;
+    const thisRun = ++runRef.current;
+    setIsRunning(true);
+    setCountdown(COUNTDOWN_PHASES[0]);
+
+    try {
       const result = await runBatchSimulation(batchSize, verticals, useLLM);
-      clearInterval(timer);
-      setProgress(100);
-      setTimeout(() => {
-        onSimulationComplete(result);
-        setIsRunning(false);
-        setProgress(0);
-      }, 400);
+      if (runRef.current !== thisRun) return;
+      let elapsedPhases = 1;
+      const phase = COUNTDOWN_PHASES[0];
+      setCountdown(phase);
+      // hold T-00s long enough to read ignition, then hand over
+      await new Promise((resolve) => setTimeout(resolve, Math.max(0, 420 * (COUNTDOWN_PHASES.length - 1) - 420 * elapsedPhases) + 300));
+      if (runRef.current !== thisRun) return;
+      onSimulationComplete(result);
+      setCountdown(null);
+      setIsRunning(false);
     } catch (err) {
       console.error('Batch simulation error:', err);
+      setCountdown(null);
       setIsRunning(false);
-      setProgress(0);
     }
   };
 
-  const formatINR = (val?: number) => {
-    if (val === undefined || isNaN(val)) return '₹0';
-    return '₹' + Math.round(val).toLocaleString('en-IN');
-  };
-
-  const baselinePct = summary?.recovery_rate_baseline || 19.5;
-  const aiPct = summary?.recovery_rate_ai || 74.2;
+  const aiPct = summary?.recovery_rate_ai ?? 0;
+  const basePct = summary?.recovery_rate_baseline ?? 0;
+  const isHardStop = (type: string) => type === 'HARD_STOP_NO_ACTION';
 
   return (
-    <div className="space-y-6">
-      {/* Control Panel */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          {/* Settings Left */}
+    <div className="space-y-5">
+      {/* Sequencer panel */}
+      <section className="panel-graticule" aria-label="Batch recovery sequencer">
+        <StationHeader
+          code="STA-01 · BATCH RECOVERY SIMULATION"
+          title="Launch Countdown — Batch Sequencer"
+          subtitle="Arm the batch, hold for the range, and measure rupees recovered across failed transactions, recurring mandate debits and checkout drop-offs against a blind naive-dunning baseline."
+          right={
+            <div className="numeric text-[10px] tracking-wider text-right">
+              <div className="text-[#6A8296]">RANGE STATUS</div>
+              <div className={`mt-1 flex items-center justify-end gap-2 ${isRunning ? 'text-[#FFB300]' : 'text-[#2EFF7B]'}`}>
+                <StatusLamp on ink={isRunning ? INK.amber : INK.signal} />
+                {isRunning ? 'COUNT IN PROGRESS' : 'GO FOR LAUNCH'}
+              </div>
+            </div>
+          }
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-5 px-4 sm:px-5 py-5">
+          {/* Hardware guards */}
           <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                <Zap className="w-5 h-5 text-[#3395FF]" />
-                <span>Batch Recovery Simulation Engine</span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Measure rupees recovered across failed transactions, recurring mandate debits, and checkout drop-offs.
-              </p>
-            </div>
-
-            {/* Batch Size Selection */}
-            <div className="flex items-center space-x-3">
-              <span className="text-xs font-semibold text-slate-300">Batch Size:</span>
-              {[50, 100, 250, 500].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setBatchSize(size)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                    batchSize === size
-                      ? 'bg-[#3395FF] text-white shadow-md shadow-blue-500/20'
-                      : 'bg-[#162238] text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {size} Txns
-                </button>
-              ))}
-            </div>
-
-            {/* Verticals Multi-Select */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-300">Merchant Verticals:</span>
-              {['SaaS', 'D2C', 'B2B', 'OTT'].map((v) => {
-                const isSelected = verticals.includes(v);
-                return (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <span className="numeric text-[10px] tracking-[0.18em] text-[#7C93A6]">BATCH SIZE</span>
+              <div className="flex gap-2">
+                {[50, 100, 250, 500].map((size) => (
                   <button
-                    key={v}
-                    onClick={() => toggleVertical(v)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
-                      isSelected
-                        ? 'bg-blue-500/10 border-blue-500/40 text-blue-400'
-                        : 'bg-transparent border-[#1E2E52] text-slate-500 hover:text-slate-300'
+                    key={size}
+                    onClick={() => setBatchSize(size)}
+                    aria-pressed={batchSize === size}
+                    className={`numeric px-3 py-1.5 text-xs border transition-colors ${
+                      batchSize === size
+                        ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07]'
+                        : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296]'
                     }`}
                   >
-                    {v}
+                    {size}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <span className="numeric text-[10px] tracking-[0.18em] text-[#7C93A6]">VERTICALS</span>
+              <div className="flex gap-2">
+                {['SaaS', 'D2C', 'B2B', 'OTT'].map((v) => {
+                  const on = verticals.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => toggleVertical(v)}
+                      aria-pressed={on}
+                      className={`flex items-center gap-2 numeric px-3 py-1.5 text-xs border transition-colors ${
+                        on
+                          ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07]'
+                          : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296]'
+                      }`}
+                    >
+                      <StatusLamp on={on} ink={INK.signal} />
+                      {v}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <span className="numeric text-[10px] tracking-[0.18em] text-[#7C93A6]">DIAGNOSTICIAN</span>
+              <button
+                onClick={() => setUseLLM(!useLLM)}
+                aria-pressed={useLLM}
+                className={`flex items-center gap-2.5 numeric px-3 py-1.5 text-xs border transition-colors ${
+                  useLLM
+                    ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07]'
+                    : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2]'
+                }`}
+              >
+                <Cpu className="w-3.5 h-3.5" />
+                MINIMAX-M3 LLM {useLLM ? 'ENGAGED' : 'BYPASSED'}
+              </button>
+              <span className="text-[11px] text-[#6A8296]">
+                Bypass falls back to the deterministic error-code rule map — recovery never blocks.
+              </span>
             </div>
           </div>
 
-          {/* Action Right */}
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <label className="flex items-center space-x-2 cursor-pointer bg-[#162238] px-3 py-2 rounded-xl border border-[#1E2E52]">
-              <input
-                type="checkbox"
-                checked={useLLM}
-                onChange={(e) => setUseLLM(e.target.checked)}
-                className="rounded border-[#1E2E52] text-[#3395FF] focus:ring-0"
-              />
-              <span className="text-xs text-slate-300 flex items-center space-x-1">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <span>MiniMax AI Diagnostics</span>
-              </span>
-            </label>
-
+          {/* Launch control */}
+          <div className="lg:w-64 flex flex-col justify-center">
             <button
-              onClick={handleRun}
+              onClick={handleLaunch}
               disabled={isRunning}
-              className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 shadow-lg transition-all ${
+              className={`w-full py-4 numeric text-sm font-semibold tracking-[0.12em] border transition-all flex items-center justify-center gap-2.5 ${
                 isRunning
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#3395FF] to-[#10B981] text-white hover:opacity-95 shadow-blue-500/25 active:scale-95'
+                  ? 'border-[#FFB300]/60 text-[#FFB300] bg-[#FFB300]/[0.06] cursor-wait'
+                  : 'border-[#2EFF7B] text-[#05080F] bg-[#2EFF7B] hover:shadow-[0_0_30px_-8px_rgba(46,255,123,0.6)] active:translate-y-px'
               }`}
             >
-              {isRunning ? (
-                <>
-                  <RotateCcw className="w-4 h-4 animate-spin" />
-                  <span>Processing Batch...</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 fill-current" />
-                  <span>Execute Batch Simulation</span>
-                </>
-              )}
+              {isRunning ? <RotateCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              {isRunning ? 'HOLD · COUNT RUNNING' : 'EXECUTE BATCH LAUNCH'}
             </button>
+            <div className="mt-2 numeric text-[10px] text-[#6A8296] text-center tracking-wider">
+              {isRunning ? 'DO NOT CLOSE THE RANGE' : `PAYLOAD · ${batchSize} EVENTS · ${verticals.length} VERTICALS`}
+            </div>
           </div>
         </div>
 
-        {/* Progress bar during run */}
-        {isRunning && (
-          <div className="mt-6">
-            <div className="flex justify-between text-xs text-slate-400 mb-1">
-              <span>Evaluating root causes &amp; enforcing RBI compliance...</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full bg-[#162238] rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-[#3395FF] to-[#10B981] h-2 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+        {/* Countdown strip */}
+        {countdown && (
+          <div className="border-t border-[#1C3245] px-4 sm:px-5 py-3.5 bg-[#05080F]/60" role="status">
+            <div className="flex items-center gap-4">
+              <span className="numeric text-xl text-phosphor-amber tracking-tight">{countdown.t}</span>
+              <div className="h-px flex-1 bg-[#1C3245] relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 bg-[#FFB300] transition-all duration-300" style={{ width: `${((COUNTDOWN_PHASES.findIndex((p) => p.t === countdown.t) + 1) / COUNTDOWN_PHASES.length) * 100}%` }} />
+              </div>
+              <span className="numeric text-xs text-[#FFB300] tracking-[0.14em]">{countdown.call}</span>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Side-by-Side Comparison: Baseline vs RazorRevive AI */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Comparison Visualizer */}
-        <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4 text-[#3395FF]" />
-              <span>Recovery Performance: Baseline vs. RazorRevive AI</span>
-            </h3>
-            <span className="text-xs text-slate-400">Batch of {summary?.total_transactions || 100}</span>
-          </div>
-
-          {/* AI Win Bar */}
-          <div className="space-y-4">
+      {/* Post-flight readouts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Trajectory comparison */}
+        <section className="panel-graticule" aria-label="Recovery performance comparison">
+          <StationHeader
+            code="TRAJECTORY COMPARISON"
+            title="AI Stack vs Blind Dunning"
+            subtitle={`Batch of ${summary?.total_transactions ?? 0} at-risk events, identical inputs, two strategies.`}
+          />
+          <div className="px-4 sm:px-5 py-5 space-y-5">
+            {/* AI trace */}
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="font-semibold text-emerald-400 flex items-center space-x-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>RazorRevive AI (Downtime Sequencer + Hinglish P2P + Magic Links)</span>
-                </span>
-                <span className="font-bold text-emerald-400">
-                  {aiPct.toFixed(1)}% ({formatINR(summary?.total_recovered_ai)})
+              <div className="flex items-baseline justify-between text-[11px] numeric mb-1.5">
+                <span className="text-[#2EFF7B]">RRV STACK · SEQUENCER + P2P AGENT + MAGIC LINKS</span>
+                <span className="text-[#2EFF7B] text-sm text-phosphor">
+                  {aiPct.toFixed(1)}% · {formatINR(summary?.total_recovered_ai)}
                 </span>
               </div>
-              <div className="w-full bg-[#162238] rounded-full h-4 overflow-hidden p-0.5">
+              <div className="h-3 bg-[#0D1524] border border-[#1C3245] relative overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-[#10B981] to-[#34D399] h-3 rounded-full transition-all duration-700 shadow-sm"
-                  style={{ width: `${Math.min(100, Math.max(5, aiPct))}%` }}
+                  className="absolute inset-y-0 left-0 bg-[#2EFF7B] transition-all duration-700"
+                  style={{ width: `${Math.min(100, Math.max(2, aiPct))}%`, boxShadow: '0 0 12px rgba(46,255,123,0.5)' }}
                 />
               </div>
             </div>
 
-            {/* Baseline Bar */}
+            {/* Baseline trace */}
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="font-semibold text-slate-400 flex items-center space-x-1">
-                  <AlertOctagon className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Industry Baseline (Blind 3 Retries + Generic Email)</span>
-                </span>
-                <span className="font-bold text-slate-400">
-                  {baselinePct.toFixed(1)}% ({formatINR(summary?.total_recovered_baseline)})
+              <div className="flex items-baseline justify-between text-[11px] numeric mb-1.5">
+                <span className="text-[#7C93A6]">BASELINE · BLIND 3 RETRIES + GENERIC EMAIL</span>
+                <span className="text-[#7C93A6] text-sm">
+                  {basePct.toFixed(1)}% · {formatINR(summary?.total_recovered_baseline)}
                 </span>
               </div>
-              <div className="w-full bg-[#162238] rounded-full h-4 overflow-hidden p-0.5">
+              <div className="h-3 bg-[#0D1524] border border-[#1C3245] relative overflow-hidden">
                 <div
-                  className="bg-slate-600 h-3 rounded-full transition-all duration-700"
-                  style={{ width: `${Math.min(100, Math.max(5, baselinePct))}%` }}
+                  className="absolute inset-y-0 left-0 bg-[#6A8296] transition-all duration-700"
+                  style={{ width: `${Math.min(100, Math.max(2, basePct))}%` }}
                 />
               </div>
             </div>
-          </div>
 
-          {/* Financial Value Box */}
-          <div className="mt-6 p-4 rounded-xl bg-[#0D1527] border border-[#1E2E52]/80 flex items-center justify-between">
-            <div>
-              <div className="text-xs text-slate-400">Net Additional Revenue Won Back</div>
-              <div className="text-xl font-bold text-emerald-400">
-                +{formatINR(summary?.incremental_lift_rupees)}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-slate-400">Agent Operating Cost</div>
-              <div className="text-sm font-semibold text-slate-300">
-                {formatINR(summary?.total_operational_cost)}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-slate-400">Net ROI Multiplier</div>
-              <div className="text-xl font-bold text-blue-400">
-                {summary?.roi_multiplier.toFixed(0) || '0'}x
-              </div>
+            {/* Flight economics */}
+            <div className="grid grid-cols-3 divide-x divide-[#1C3245] border border-[#1C3245] bg-[#05080F]/50">
+              {[
+                { label: 'INCREMENTAL WON BACK', value: `+${formatINR(summary?.incremental_lift_rupees)}`, cls: 'text-[#2EFF7B]' },
+                { label: 'AGENT OPERATING COST', value: formatINR(summary?.total_operational_cost), cls: 'text-[#CFE4F2]' },
+                { label: 'NET ROI MULTIPLIER', value: `${summary?.roi_multiplier?.toFixed(0) ?? 0}—`, cls: 'text-phosphor-amber' },
+              ].map((cell) => (
+                <div key={cell.label} className="px-4 py-3.5">
+                  <div className="numeric text-[9px] tracking-[0.18em] text-[#6A8296]">{cell.label}</div>
+                  <div className={`numeric text-lg mt-2 tracking-tight ${cell.cls}`}>{cell.value}</div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Breakdown by Failure Mode & Guardrails */}
-        <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Interventions &amp; Guardrails Enforced</span>
-            </h3>
-            <span className="text-xs text-slate-400">Safe &amp; Bounded</span>
-          </div>
-
-          <div className="space-y-3">
-            {summary?.interventions_breakdown &&
-              Object.entries(summary.interventions_breakdown).map(([type, count]) => {
-                const isHardStop = type === 'HARD_STOP_NO_ACTION';
-                return (
-                  <div
-                    key={type}
-                    className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#162238]/60 border border-[#1E2E52]/50"
-                  >
-                    <span className="font-medium text-slate-300 flex items-center space-x-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isHardStop ? 'bg-rose-500' : 'bg-emerald-400'
-                        }`}
-                      />
-                      <span>{type.replace(/_/g, ' ')}</span>
-                    </span>
-                    <span
-                      className={`font-semibold px-2 py-0.5 rounded ${
-                        isHardStop
-                          ? 'bg-rose-500/10 text-rose-400'
-                          : 'bg-blue-500/10 text-blue-400'
+        {/* Interventions manifest */}
+        <section className="panel-graticule" aria-label="Interventions and guardrails manifest">
+          <StationHeader
+            code="PAYLOAD MANIFEST"
+            title="Interventions & Range-Safety Stops"
+            subtitle="Every event routed to exactly one bounded intervention. Hard stops are the system working, not failing — they protect merchant trust and kill bounce penalty fees."
+          />
+          <div className="px-4 sm:px-5 py-5">
+            <div className="space-y-2.5">
+              {summary?.interventions_breakdown &&
+                Object.entries(summary.interventions_breakdown).map(([type, count]) => {
+                  const hard = isHardStop(type);
+                  return (
+                    <div
+                      key={type}
+                      className={`flex items-center justify-between px-3.5 py-2.5 border text-xs numeric ${
+                        hard ? 'border-[#FF4D4D]/40 bg-[#FF4D4D]/[0.05]' : 'border-[#1C3245] bg-[#0D1524]/70'
                       }`}
                     >
-                      {count} txns
-                    </span>
-                  </div>
-                );
-              })}
-          </div>
+                      <span className="flex items-center gap-2.5">
+                        {hard ? (
+                          <MinusCircle className="w-3.5 h-3.5 text-[#FF4D4D]" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#2EFF7B]" />
+                        )}
+                        <span className={hard ? 'text-[#FF4D4D]' : 'text-[#CFE4F2]'}>
+                          {type.replace(/_/g, ' ')}
+                        </span>
+                      </span>
+                      <span className={hard ? 'text-[#FF4D4D]' : 'text-[#7C93A6]'}>{count} EVENTS</span>
+                    </div>
+                  );
+                })}
+            </div>
 
-          <div className="mt-4 text-[11px] text-slate-400 bg-blue-500/5 border border-blue-500/20 p-2.5 rounded-lg">
-            <strong>Compliance Guarantee:</strong> All permanent declines (expired cards, fraud tags) are halted instantly with 0 retry attempts, preserving merchant trust and eliminating bounce penalty fees.
+            <p className="mt-4 text-[11px] text-[#7C93A6] leading-relaxed border-l-2 border-[#2EFF7B] pl-3">
+              Permanent declines — expired cards, fraud tags, closed accounts — are halted with zero retry
+              attempts, inside RBI contact hours, inside the 3-touchpoint / 7-day ceiling.
+            </p>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

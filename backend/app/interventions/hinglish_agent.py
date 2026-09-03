@@ -34,7 +34,7 @@ class HinglishRecoveryAgent:
         lower = text.lower()
         now = datetime.now()
         promised_date = None
-        promised_time = "10:00 AM IST"
+        promised_time = None
 
         # Check relative days
         if "aaj" in lower or "today" in lower:
@@ -43,29 +43,77 @@ class HinglishRecoveryAgent:
             promised_date = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         elif "parson" in lower or "day after" in lower:
             promised_date = (now + timedelta(days=2)).strftime("%Y-%m-%d")
-        elif any(k in lower for k in ["weekend", "shanivar", "ravivar", "sunday", "saturday"]):
-            days_ahead = (5 - now.weekday()) % 7 or 2
-            promised_date = (now + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
-        elif "salary" in lower or "mahine" in lower:
-            # Typical salary date: 1st or next 3 days
+        else:
+            # "X din baad" / "in X days" (e.g. 'salary aane par 2 din baad', 'in 3 days')
+            days_match = re.search(r"(\d+)\s*din\s*baad", lower) or re.search(r"in\s+(\d+)\s*days?", lower)
+            if days_match:
+                promised_date = (now + timedelta(days=int(days_match.group(1)))).strftime("%Y-%m-%d")
+
+        # Salary-cycle promise: money arrives typically on the 1st or within a few days
+        if not promised_date and ("salary" in lower or "mahine" in lower):
             promised_date = (now + timedelta(days=3)).strftime("%Y-%m-%d")
 
-        # Check time cues
+        # Named weekdays (monday..sunday / somvar..ravivar)
+        if not promised_date:
+            weekday_names = ["monday", "somvar", "tuesday", "mangalvar", "wednesday", "budhvar",
+                             "thursday", "guruvar", "friday", "shukrawar", "saturday", "shanivar",
+                             "sunday", "ravivar", "weekend"]
+            for wd in weekday_names:
+                if wd in lower:
+                    if wd == "weekend":
+                        days_ahead = (5 - now.weekday()) % 7 or 2
+                    else:
+                        # ISO weekday: Monday=1 ... Sunday=7
+                        target_map = {
+                            "monday": 1, "somvar": 1, "tuesday": 2, "mangalvar": 2,
+                            "wednesday": 3, "budhvar": 3, "thursday": 4, "guruvar": 4,
+                            "friday": 5, "shukrawar": 5, "saturday": 6, "shanivar": 6,
+                            "sunday": 7, "ravivar": 7,
+                        }
+                        target = target_map[wd]
+                        days_ahead = (target - now.isoweekday()) % 7 or 7
+                    promised_date = (now + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+                    break
+
+        # Determine time-of-day from an explicit part-of-day cue first
+        # so it cannot be overridden by the numeric 'baje' heuristic below.
+        period = None
         if "shaam" in lower or "evening" in lower:
-            promised_time = "06:00 PM IST"
+            period = "PM"
         elif "subah" in lower or "morning" in lower:
-            promised_time = "10:00 AM IST"
+            period = "AM"
         elif "dopahar" in lower or "afternoon" in lower:
-            promised_time = "02:30 PM IST"
-        
-        # Regex for specific hour e.g. "5 baje", "4 pm"
-        hour_match = re.search(r"(\d{1,2})\s*(baje|pm|am|hours)", lower)
+            period = "PM"  # afternoons are PM on a 12-hour clock
+
+        if period == "AM":
+            promised_time = "10:00 AM IST"
+        elif period == "PM":
+            promised_time = "02:30 PM IST" if ("dopahar" in lower or "afternoon" in lower) else "06:00 PM IST"
+
+        # Regex for a specific hour e.g. "5 baje", "4 pm", "10 am"
+        hour_match = re.search(r"(\d{1,2})\s*(baje|pm|am)\b", lower)
         if hour_match:
             hr = int(hour_match.group(1))
-            period = "PM" if "pm" in lower or ("baje" in lower and hr in [4,5,6,7,8]) else "AM"
-            promised_time = f"{hr:02d}:00 {period} IST"
+            if hr < 1 or hr > 12:
+                hr = min(max(hr, 1), 12)
+            if period:
+                # Explicit part-of-day word wins over numeric guessing
+                promised_time = f"{hr:02d}:00 {period} IST"
+            else:
+                cue = hour_match.group(2)
+                if cue in ("pm", "am"):
+                    resolved = cue.upper()
+                elif hr >= 9:
+                    # Indian conversational default: 9-12 baje is daytime (AM)
+                    resolved = "AM"
+                else:
+                    # Early hours without a cue default to evening commitments
+                    resolved = "PM"
+                promised_time = f"{hr:02d}:00 {resolved} IST"
 
-        if promised_date:
+        if promised_date or promised_time:
+            if promised_time is None:
+                promised_time = "10:00 AM IST"
             return promised_date, promised_time
         return None, None
 
@@ -189,7 +237,7 @@ Tone: Polite, respectful Indian conversational Hinglish. Empathize with technica
                 for m in messages[-4:]:
                     llm_messages.append({"role": m.role, "content": m.content})
 
-                async with httpx.AsyncClient(timeout=3.5) as client:
+                async with httpx.AsyncClient(timeout=15.0) as client:
                     r = await client.post(
                         f"{GMI_BASE_URL}/chat/completions",
                         headers={"Authorization": f"Bearer {GMI_API_KEY}"},

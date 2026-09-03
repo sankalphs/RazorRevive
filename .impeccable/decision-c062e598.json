@@ -1,0 +1,104 @@
+{
+  "title": "Choose the visual world",
+  "question": "The roll assigned The Bounce Book. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Bounce Book",
+      "kicker": "THE ROLL",
+      "lineage": "Indian cheque leaf, bank passbook, MICR print",
+      "thesis": "The failed-payment engine wears the artifact failure was printed on: an open bank passbook where every rupee has a row and the red bounce stamp is the system's most honest citizen.",
+      "palette": ["#F2EDE0", "#1C2B39", "#C73E3A", "#2E7D5B", "#E8A13C"],
+      "materials": ["MICR E-13B band", "dot-matrix passbook grid", "rubber stamps", "red-and-blue ledger ruling", "perforated voucher edges"],
+      "viewport": "An open passbook spread: index tabs as navigation, KPIs as a statement summary box, the batch simulator as a perforated recovery voucher stamped on execution.",
+      "raised": [
+        { "from": "Game Boy four-shade field", "raise": "State law: every recovery state maps to exactly one stamp ink — green PAID, red STOPPED, amber PROMISED, ink-blue pending — never a gradient, never ambiguous." },
+        { "from": "Zoo guide map", "raise": "Motion law: one timing for the whole book — every stamp slams with a single 0.4s overshoot and settles, nothing else animates." },
+        { "from": "Sneaker archive wall", "raise": "Spine law: every ledger row reads whole from its margin — amount, stamp, clause — before any expansion." }
+      ],
+      "risk": "Reads nostalgic-quirky if the stamps become stickers and the grid goes soft; it only works at full bank-document severity."
+    },
+    {
+      "id": "model-pick",
+      "label": "Mission Control, Sriharikota",
+      "kicker": "IMPECCABLE\u2019S PICK",
+      "lineage": "ISRO launch-operations room",
+      "thesis": "The recovery engine as a countdown: every intervention a scheduled burn, guardrails as range-safety red lines no one crosses.",
+      "palette": ["#0A1120", "#2EFF7B", "#FFB000", "#FF4545"],
+      "materials": ["CRT phosphor glow", "tracking graticule", "vehicle status boards", "bilingual console labels"],
+      "viewport": "A console wall: bank-health telemetry live on phosphor screens, the pipeline running as a launch sequence with countdown discipline.",
+      "risk": "Mission control is the default dramatic grammar for autonomous systems — every judge has seen a launch-console demo, and it shares the dark canvas with the incumbent."
+    },
+    {
+      "id": "challenger-oscilloscope",
+      "label": "The Signal Bench",
+      "verdict": "competitive",
+      "lineage": "CRT oscilloscope on a signal bench",
+      "thesis": "Payment events as live traces: the pipeline overlays one measured graticule, the guardrail is a trigger level you can see.",
+      "palette": ["#060A08", "#2EFF7B", "#FFB000", "#4A5568"],
+      "materials": ["phosphor trace", "etched graticule", "detented knobs", "seven-segment readouts"],
+      "viewport": "One screen, many signals: AI strategy and naive baseline as two channels on the same ten-division grid.",
+      "case": "Fuses cleanly — event streams as traces, trigger level as the compliance threshold; loses narrowly on rupee, stamp and settlement semantics.",
+      "risk": "Collapses into Bloomberg-terminal monoculture if the graticule loses its ten-division law.",
+      "hero": "https://impeccable.style/worlds/cards/scientific-notation-oscilloscope-signal-bench-hero.webp"
+    },
+    {
+      "id": "challenger-dive",
+      "label": "The Mesophotic Descent",
+      "verdict": "competitive",
+      "lineage": "technical deep-dive down a reef wall",
+      "thesis": "The pipeline as a staged descent: detect at the surface, cross the guardrail thermocline, settle on the audit floor.",
+      "palette": ["#07223A", "#0A4B66", "#7FE8E3", "#F4F7F9"],
+      "materials": ["dive-computer mono digits", "marine snow", "lamp-lit water", "depth-ruled copy"],
+      "viewport": "One vertical depth axis ruling every line of copy; the thermocline band marks where hard stops live.",
+      "case": "The depth axis sequences the pipeline beautifully, but Indian payments judges do not live underwater.",
+      "risk": "Marine metaphor overpowers the compliance story if the depth axis does not carry real data.",
+      "hero": "https://impeccable.style/worlds/cards/rivers-tides-ocean-depths-mesophotic-deep-dive-hero.webp"
+    },
+    {
+      "id": "challenger-gameboy",
+      "label": "Four-Green Field",
+      "verdict": "declined",
+      "lineage": "Game Boy four-shade tile field",
+      "palette": ["#9BBC0F", "#8BAC0F", "#306230", "#0F380F"],
+      "materials": ["dither checker", "8x8 tile caps", "blinking cursor"],
+      "case": "Fuses weakly: four shades cannot carry rupee tables, Hinglish chat and LLM reasoning.",
+      "kept": "State law: one ink per state, never ambiguity — the stamp inks are now strict.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-gameboy-four-shade-field-hero.webp"
+    },
+    {
+      "id": "challenger-zoo",
+      "label": "Coastline Map",
+      "verdict": "declined",
+      "lineage": "zoo and gardens guide map",
+      "palette": ["#8ED462", "#F5F1E4", "#2C2E2A", "#FF705D"],
+      "materials": ["flat colour lobes", "capsule controls", "coastline dividers"],
+      "case": "Fuses poorly: ledger space is tabular, not lobular, and judges do not identify with zoo maps.",
+      "kept": "Motion law: everything that moves takes 0.4s and overshoots before settling — the stamp slam inherits it.",
+      "hero": "https://impeccable.style/worlds/cards/aww2-zoo-gardens-guide-map-hero.webp"
+    },
+    {
+      "id": "challenger-sneaker",
+      "label": "Archive Wall",
+      "verdict": "declined",
+      "lineage": "stacked sneaker boxes with printed end labels",
+      "palette": ["#C46A2B", "#1A1A1A", "#F5F0E6"],
+      "materials": ["cardboard", "one-line silhouette art", "tissue interiors"],
+      "case": "Fuses weakly: hinge-and-lid browsing fits a catalog, not a live ledger; consumer archive culture is not the judges' world.",
+      "kept": "Spine law: every container reads whole from its labeled edge before opening — ledger rows inherit the margin.",
+      "hero": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-sneaker-box-stacks-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "canon": true,
+  "canonCard": {
+    "label": "The Category Standard",
+    "thesis": "The polished fintech dashboard this category always ships, executed impeccably.",
+    "palette": ["#FFFFFF", "#0F172A", "#2563EB"],
+    "materials": ["clean grid", "KPI cards", "status pills"],
+    "viewport": "Sticky nav, KPI cards, a dense table — the arrangement every judge expects, at full craft.",
+    "risk": "Indistinguishable from every other payments demo by design."
+  },
+  "steer": true,
+  "buildPath": { "value": "code", "toggle": false }
+}

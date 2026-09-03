@@ -18,15 +18,36 @@ HARD_STOP_ERROR_CODES = {
     "DO_NOT_HONOUR_PERMANENT"
 }
 
-OPT_OUT_KEYWORDS = [
-    "stop", "unsubscribe", "optout", "opt out", "mat phone karo",
-    "call mat karo", "don't call", "harass", "police", "fir",
-    "block", "spam", "complaint"
+# Word-boundary regex patterns to avoid false positives:
+# plain substring "fir" would wrongly match "confirm"/"first", and
+# "hospital" would wrongly match "hospitality".
+OPT_OUT_PATTERNS = [
+    r"\bstop\b",
+    r"\bunsubscrib\w*",
+    r"\bopt[\s-]?outs?\b",
+    r"mat phone karo",
+    r"call mat karo",
+    r"don'?t call",
+    r"\bharass\w*",
+    r"\bpolice\b",
+    r"\bfir\b",
+    r"\bblock(?:ed|ing|s)?\b",
+    r"\bspam(?:s|med)?\b",
+    r"\bcomplaints?\b",
 ]
 
-HARDSHIP_KEYWORDS = [
-    "jobless", "no money", "lost job", "hospital", "medical emergency",
-    "bimar", "paise nahi", "garib", "hardship", "bankruptcy", "debt trap"
+HARDSHIP_PATTERNS = [
+    r"\bjobless\b",
+    r"\bno money\b",
+    r"\blost\s+(?:my\s+|a\s+)?job\b",
+    r"\bhospital(?:ized|ised)?\b",
+    r"\bmedical emergency\b",
+    r"\bbimar\b",
+    r"\bpaise nahi\b",
+    r"\bgarib\b",
+    r"\bhardship\b",
+    r"\bbankrupt(?:cy)?\b",
+    r"\bdebt trap\b",
 ]
 
 def get_current_ist_time() -> datetime:
@@ -54,12 +75,12 @@ def is_within_rbi_contact_hours(custom_time: Optional[datetime] = None) -> Tuple
 def check_customer_opt_out(text: str) -> bool:
     """Checks if message contains opt-out / DND request."""
     lower = text.lower()
-    return any(keyword in lower for keyword in OPT_OUT_KEYWORDS)
+    return any(re.search(p, lower) for p in OPT_OUT_PATTERNS)
 
 def check_customer_hardship(text: str) -> bool:
     """Checks if message indicates financial distress or hardship."""
     lower = text.lower()
-    return any(keyword in lower for keyword in HARDSHIP_KEYWORDS)
+    return any(re.search(p, lower) for p in HARDSHIP_PATTERNS)
 
 def evaluate_compliance_and_guardrails(
     txn: AtRiskTransaction,

@@ -77,7 +77,21 @@ def test_opt_out_keyword_detection():
     assert check_customer_opt_out("mat phone karo please")
     assert not check_customer_opt_out("Kal shaam ko link bhej do")
 
+def test_opt_out_no_false_positives():
+    # 'fir' as a substring must not match inside confirm/first
+    assert not check_customer_opt_out("Yes I confirm, please send the payment link")
+    assert not check_customer_opt_out("I will pay first thing tomorrow")
+    assert not check_customer_opt_out("First installment kab hai?")
+    # But a genuine FIR/police threat still opts out
+    assert check_customer_opt_out("FIR karna hai police me")
+    assert check_customer_opt_out("This is harassment, unsubscribe now")
+
 def test_hardship_keyword_detection():
     assert check_customer_hardship("I am in the hospital and jobless right now")
     assert check_customer_hardship("paise nahi hai mere paas abhi")
     assert not check_customer_hardship("I will pay tomorrow morning")
+
+def test_hardship_no_false_positives():
+    # 'hospital' substring must not match 'hospitality'
+    assert not check_customer_hardship("I work in the hospitality industry")
+    assert check_customer_hardship("My father is hospitalized, medical emergency")

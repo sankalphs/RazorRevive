@@ -23,33 +23,57 @@ INDIAN_NAMES = [
 
 CITIES = ["Bengaluru", "Mumbai", "Delhi NCR", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad"]
 
-FAILURE_PRESETS = [
-    # Transient technical
-    ("BANK_DEBIT_FAILED_TECHNICAL", "Downstream bank gateway timeout during debit attempt", "SBIN", 78.2),
-    ("GATEWAY_ERROR", "504 Gateway Timeout from NPCI switch", "HDFC", 99.4),
-    ("NPCI_TIMEOUT", "UPI switch response timed out after 30 seconds", "ICIC", 98.9),
-    
-    # Soft financial
-    ("INSUFFICIENT_FUNDS", "Declined by customer bank due to low balance", "SBIN", 78.2),
-    ("UPI_DAILY_LIMIT_EXCEEDED", "Customer reached daily UPI transaction limit of ₹1,00,000", "HDFC", 99.4),
-    
-    # Hard permanent (Guardrails should stop these)
-    ("CARD_EXPIRED", "Mandate card token expired; bank declined authorization", "ICIC", 98.9),
-    ("FRAUD_DETECTED", "High-risk score flagged by issuer fraud detection switch", "UTIB", 96.5),
-    ("ACCOUNT_CLOSED", "Customer savings account closed or non-operational", "KKBK", 97.8),
-    
-    # Behavioral checkout drop-off
-    ("CHECKOUT_DROPPED_OFF", "Customer abandoned session at shipping/payment step", "HDFC", 99.4),
-    ("CART_ABANDONED_SHIPPING_FRICTION", "User exited after shipping charge calculated", "SBIN", 78.2),
-    
-    # B2B Invoice overdue
-    ("INVOICE_OVERDUE_30_DAYS", "Net-30 invoice crossed due date without payment reconciliation", "HDFC", 99.4),
-]
+# Failure presets keyed by the channel they can actually occur on.
+# Weighted to realistic Indian issuer distributions:
+# transient gateway issues ~40%, soft financial ~30%, hard permanent ~15%,
+# behavioral drop-offs on checkout channels, commercial delays on B2B.
+# UPI_AUTOPAY / ENACH / CARD_MANDATE -> mandate-style failures
+# MAGIC_CHECKOUT -> behavioral drop-offs
+# B2B_INVOICE -> commercial / procurement failures
+CHANNEL_FAILURE_PRESETS = {
+    "UPI_AUTOPAY": [
+        # Transient technical (weight 3)
+        ("BANK_DEBIT_FAILED_TECHNICAL", "Downstream bank gateway timeout during debit attempt", "SBIN", 78.2),
+        ("GATEWAY_ERROR", "504 Gateway Timeout from NPCI switch", "HDFC", 99.4),
+        ("NPCI_TIMEOUT", "UPI switch response timed out after 30 seconds", "ICIC", 98.9),
+        ("BANK_DEBIT_FAILED_TECHNICAL", "Issuer node degradation during 02:00 AM auto-debit window", "SBIN", 78.2),
+        # Soft financial (weight 3)
+        ("INSUFFICIENT_FUNDS", "Declined by customer bank due to low balance", "SBIN", 78.2),
+        ("INSUFFICIENT_FUNDS", "Salary credit not yet posted; balance too low for auto-debit", "KKBK", 97.8),
+        ("UPI_DAILY_LIMIT_EXCEEDED", "Customer reached daily UPI transaction limit of ₹1,00,000", "HDFC", 99.4),
+    ],
+    "CARD_MANDATE": [
+        # Transient technical (weight 2)
+        ("GATEWAY_ERROR", "Issuer node degraded during mandate authorization", "ICIC", 98.9),
+        ("NPCI_TIMEOUT", "Card network switch response timed out", "UTIB", 96.5),
+        # Soft financial (weight 1)
+        ("INSUFFICIENT_FUNDS", "Mandate debit declined due to low card account balance", "KKBK", 97.8),
+        # Hard permanent (weight 2, ~15% share)
+        ("CARD_EXPIRED", "Mandate card token expired; bank declined authorization", "ICIC", 98.9),
+        ("FRAUD_DETECTED", "High-risk score flagged by issuer fraud detection switch", "UTIB", 96.5),
+    ],
+    "MAGIC_CHECKOUT": [
+        # Behavioral drop-offs
+        ("CHECKOUT_DROPPED_OFF", "Customer abandoned session at shipping/payment step", "HDFC", 99.4),
+        ("CART_ABANDONED_SHIPPING_FRICTION", "User exited after shipping charge calculated", "SBIN", 78.2),
+        ("CHECKOUT_DROPPED_OFF", "OTP verification timed out during checkout", "HDFC", 99.4),
+    ],
+    "B2B_INVOICE": [
+        # B2B commercial / procurement (weight 2)
+        ("INVOICE_OVERDUE_30_DAYS", "Net-30 invoice crossed due date without payment reconciliation", "HDFC", 99.4),
+        ("INVOICE_APPROVAL_PENDING", "Invoice stuck in enterprise procurement approval workflow", "ICIC", 98.9),
+    ],
+}
 
 def generate_synthetic_batch(size: int = 100, vertical_mix: List[str] = None) -> List[AtRiskTransaction]:
-    """Generates a realistic batch of Indian at-risk payment transactions."""
+    """Generates a realistic batch of Indian at-risk payment transactions.
+
+    Failure codes are coherent with the merchant channel: mandate debits never
+    produce cart-dropoff codes, and B2B invoices never surface consumer UPI
+    errors — every audit row must read like a plausible real event.
+    """
     batch: List[AtRiskTransaction] = []
-    
+
     for i in range(size):
         merch = random.choice(MERCHANTS)
         if vertical_mix and merch["category"] not in vertical_mix:
@@ -58,7 +82,7 @@ def generate_synthetic_batch(size: int = 100, vertical_mix: List[str] = None) ->
             if filtered:
                 merch = random.choice(filtered)
 
-        code, desc, bank, uptime = random.choice(FAILURE_PRESETS)
+        code, desc, bank, uptime = random.choice(CHANNEL_FAILURE_PRESETS[merch["channel"]])
         
         # Adjust amounts with natural variation
         variance = random.uniform(0.7, 1.4)

@@ -1,18 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PhoneCall, Send, Volume2, Calendar, Check, Clock } from 'lucide-react';
-import {
-  type ChatMessage,
-  type ChatInteractionResponse,
-  sendChatMessage,
-  fetchPresetScenarios
-} from '../services/api';
+import { Send, Volume2, Radio, Lock, Clock3 } from 'lucide-react';
+import { type ChatMessage, type ChatInteractionResponse, sendChatMessage, fetchPresetScenarios } from '../services/api';
+import { StationHeader, formatINR, StatusLamp, INK } from './telemetry';
+
+/* ============================================================
+   STA-02 · COMMS CONSOLE
+   Priya's Hinglish loop as a ground-control exchange: every
+   message a squared transmission block, downlink green,
+   uplink amber. P2P extraction locks a commitment readout.
+   ============================================================ */
 
 export const HinglishVoiceAgent: React.FC = () => {
+  const missionStamp = () =>
+    new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
   const [scenarios, setScenarios] = useState<any[]>([]);
+  const [scenariosFailed, setScenariosFailed] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lossOfSignal, setLossOfSignal] = useState(false);
+  const [voiceUnsupported, setVoiceUnsupported] = useState(false);
   const [p2pCommitment, setP2pCommitment] = useState<any>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -26,15 +35,14 @@ export const HinglishVoiceAgent: React.FC = () => {
           setSelectedScenario(first);
           setP2pCommitment(null);
           setMessages([
-            {
-              role: 'assistant',
-              content: first.initial_message,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            },
+            { role: 'assistant', content: first.initial_message, timestamp: missionStamp() },
           ]);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setScenariosFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -44,34 +52,23 @@ export const HinglishVoiceAgent: React.FC = () => {
   const selectScenario = (sc: any) => {
     setSelectedScenario(sc);
     setP2pCommitment(null);
-    setMessages([
-      {
-        role: 'assistant',
-        content: sc.initial_message,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+    setMessages([{ role: 'assistant', content: sc.initial_message, timestamp: missionStamp() }]);
   };
 
   const speakText = (text: string) => {
     if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis not supported in this browser');
+      setVoiceUnsupported(true);
       return;
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.05;
-    
-    // Find Hindi or Indian English voice if available
     const voices = window.speechSynthesis.getVoices();
     const indianVoice = voices.find(
       (v) => v.lang.includes('hi') || v.lang.includes('en-IN') || v.name.includes('India')
     );
-    if (indianVoice) {
-      utterance.voice = indianVoice;
-    }
-
+    if (indianVoice) utterance.voice = indianVoice;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
@@ -82,16 +79,12 @@ export const HinglishVoiceAgent: React.FC = () => {
     const text = textToSend || inputText;
     if (!text.trim() || !selectedScenario || loading) return;
 
-    const userMsg: ChatMessage = {
-      role: 'user',
-      content: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
+    const userMsg: ChatMessage = { role: 'user', content: text, timestamp: missionStamp() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInputText('');
     setLoading(true);
+    setLossOfSignal(false);
 
     try {
       const response: ChatInteractionResponse = await sendChatMessage({
@@ -101,188 +94,204 @@ export const HinglishVoiceAgent: React.FC = () => {
         failure_reason: selectedScenario.failure_reason,
         messages: newMessages,
       });
-
-      const assistantMsg: ChatMessage = {
-        role: 'assistant',
-        content: response.reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-
-      if (response.p2p_details) {
-        setP2pCommitment(response.p2p_details);
-      }
-
-      // Automatically speak the response if enabled
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: response.reply, timestamp: missionStamp() },
+      ]);
+      if (response.p2p_details) setP2pCommitment(response.p2p_details);
       speakText(response.audio_text_hinglish);
     } catch (err) {
-      console.error('Chat error:', err);
+      console.error('Comms error:', err);
+      setLossOfSignal(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left Column: Scenario Selector & Promise-to-Pay Widget */}
-      <div className="space-y-6">
-        {/* Scenarios */}
-        <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-5">
-          <div className="flex items-center space-x-2 mb-3">
-            <PhoneCall className="w-4 h-4 text-[#3395FF]" />
-            <h3 className="text-sm font-bold text-white">Select Recovery Scenario</h3>
-          </div>
-          <p className="text-xs text-slate-400 mb-4">
-            Test how the conversational agent engages customers in natural Hinglish, overcomes objections, and tracks promises.
-          </p>
-
-          <div className="space-y-2">
-            {scenarios.map((sc) => {
-              const isSelected = selectedScenario?.id === sc.id;
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Uplink targets + commitment */}
+      <div className="space-y-5">
+        <section className="panel-graticule" aria-label="Recovery scenario selector">
+          <StationHeader
+            code="UPLINK TARGETS"
+            title="Recovery Scenarios"
+            subtitle="Select a customer contact to open the comms loop. Each scenario is a seeded demo case with a real failure reason."
+          />
+          <div className="px-4 py-4 space-y-2">
+            {scenariosFailed ? (
+              <div className="border border-dashed border-[#1C3245] px-4 py-8 text-center">
+                <Radio className="w-6 h-6 mx-auto text-[#6A8296]" />
+                <div className="numeric text-[11px] text-[#FF4D4D] mt-3 tracking-wider">UPLINK TARGETS UNAVAILABLE</div>
+                <p className="text-[11px] text-[#7C93A6] mt-2 leading-relaxed">
+                  The scenario service is not answering. Verify the backend and reload the station.
+                </p>
+              </div>
+            ) : scenarios.length === 0 ? (
+              <div className="border border-dashed border-[#1C3245] px-4 py-8 text-center">
+                <Radio className="w-6 h-6 mx-auto text-[#6A8296]" />
+                <div className="numeric text-[11px] text-[#7C93A6] mt-3 tracking-wider">ACQUIRING TARGETS…</div>
+              </div>
+            ) : (
+            scenarios.map((sc) => {
+              const on = selectedScenario?.id === sc.id;
               return (
                 <button
                   key={sc.id}
                   onClick={() => selectScenario(sc)}
-                  className={`w-full text-left p-3 rounded-xl border text-xs transition-all ${
-                    isSelected
-                      ? 'bg-[#1E2E52]/80 border-[#3395FF] text-white shadow-md'
-                      : 'bg-[#162238]/40 border-[#1E2E52]/60 text-slate-300 hover:bg-[#162238]'
+                  aria-pressed={on}
+                  className={`w-full text-left px-3.5 py-3 border transition-colors ${
+                    on
+                      ? 'border-[#2EFF7B] bg-[#2EFF7B]/[0.06]'
+                      : 'border-[#1C3245] bg-[#0D1524]/60 hover:border-[#6A8296]'
                   }`}
                 >
-                  <div className="font-semibold">{sc.merchant_name}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{sc.title}</div>
-                  <div className="mt-1 flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-400 font-medium">₹{sc.amount}</span>
-                    <span className="text-slate-400">{sc.customer_name}</span>
+                  <div className="flex items-center justify-between">
+                    <span className={`numeric text-[11px] tracking-wider ${on ? 'text-[#2EFF7B]' : 'text-[#CFE4F2]'}`}>
+                      {sc.merchant_name}
+                    </span>
+                    <StatusLamp on={on} ink={INK.signal} />
+                  </div>
+                  <div className="text-[11px] text-[#7C93A6] mt-1">{sc.title}</div>
+                  <div className="flex items-center justify-between mt-2 numeric text-[10px]">
+                    <span className="text-[#2EFF7B]">{formatINR(sc.amount)}</span>
+                    <span className="text-[#6A8296]">{sc.customer_name}</span>
                   </div>
                 </button>
               );
-            })}
+            })
+            )}
           </div>
-        </div>
+        </section>
 
-        {/* Promise to Pay (P2P) Status Widget */}
-        <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-emerald-400" />
-              <span>Promise-to-Pay (P2P) Tracker</span>
-            </h3>
-            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
-              Active State Machine
-            </span>
-          </div>
-
-          {p2pCommitment ? (
-            <div className="space-y-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/30 text-xs">
-              <div className="flex items-center justify-between font-bold text-white">
-                <span>{p2pCommitment.customer_name}</span>
-                <span className="text-emerald-400">₹{p2pCommitment.amount}</span>
-              </div>
-              <div className="space-y-1 text-slate-300 text-[11px]">
-                <div className="flex items-center space-x-1.5">
-                  <Clock className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Promised Date: <strong>{p2pCommitment.promised_date}</strong></span>
+        {/* P2P commitment lock */}
+        <section className="panel-graticule" aria-label="Promise to pay tracker">
+          <StationHeader code="COMMITMENT LOCK" title="Promise-to-Pay Tracker" subtitle="A detected promise freezes dunning and schedules one non-intrusive reminder." />
+          <div className="px-4 py-4">
+            {p2pCommitment ? (
+              <div className="border border-[#FFB300]/50 bg-[#FFB300]/[0.05] px-4 py-4 readout-arrival">
+                <div className="flex items-center justify-between">
+                  <span className="numeric text-[11px] text-[#CFE4F2] tracking-wider">
+                    <Lock className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-[#FFB300]" />
+                    {p2pCommitment.customer_name}
+                  </span>
+                  <span className="numeric text-sm text-phosphor-amber">{formatINR(p2pCommitment.amount)}</span>
                 </div>
-                <div className="flex items-center space-x-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Time: <strong>{p2pCommitment.promised_time}</strong></span>
+                <div className="mt-3 space-y-1.5 numeric text-[11px] text-[#7C93A6]">
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="w-3.5 h-3.5 text-[#6A8296]" />
+                    PROMISED · {p2pCommitment.promised_date} · {p2pCommitment.promised_time} IST
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-[#FFB300]/25 numeric text-[10px] text-[#FFB300] tracking-wider">
+                  DUNNING PAUSED · REMINDER SCHEDULED
                 </div>
               </div>
-              <div className="pt-2 border-t border-emerald-500/20 text-[11px] text-emerald-300 flex items-center space-x-1">
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Aggressive dunning paused. Non-intrusive reminder scheduled.</span>
+            ) : (
+              <div className="border border-dashed border-[#1C3245] px-4 py-8 text-center">
+                <Radio className="w-6 h-6 mx-auto text-[#6A8296]" />
+                <div className="numeric text-[11px] text-[#7C93A6] mt-3 tracking-wider">NO COMMITMENT LOCKED</div>
+                <p className="text-[11px] text-[#6A8296] mt-2 leading-relaxed">
+                  Send <span className="text-[#CFE4F2]">"Kal shaam 6 baje payment karunga"</span> in the loop to
+                  watch intent extraction lock a promise.
+                </p>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-6 text-xs text-slate-400 border border-dashed border-[#1E2E52] rounded-xl p-4">
-              <Clock className="w-6 h-6 mx-auto mb-2 text-slate-600" />
-              <span>No active commitment detected yet.</span>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Click <em>"Kal shaam 6 baje payment karunga"</em> in the chat to see intent extraction in action.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </section>
       </div>
 
-      {/* Right 2 Columns: WhatsApp / Voice Simulator */}
-      <div className="lg:col-span-2 bg-[#101828] border border-[#1E2E52] rounded-2xl flex flex-col h-[650px] shadow-2xl overflow-hidden">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-[#1E2E52] bg-[#0A1020] flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#10B981] to-[#3395FF] flex items-center justify-center font-bold text-white text-sm">
-              RR
-            </div>
-            <div>
-              <div className="font-bold text-sm text-white flex items-center space-x-2">
-                <span>Priya from {selectedScenario?.merchant_name || 'RazorRevive'}</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Calling / WhatsApp to {selectedScenario?.customer_name} • Pending ₹{selectedScenario?.amount}
-              </p>
-            </div>
-          </div>
+      {/* Comms loop */}
+      <section className="lg:col-span-2 panel-graticule flex flex-col h-[640px]" aria-label="Hinglish communications loop">
+        <StationHeader
+          code="COMMS LOOP · CH-02"
+          title={`Priya · ${selectedScenario?.merchant_name ?? 'RazorRevive'}`}
+          subtitle={`Hinglish voice + WhatsApp downlink to ${selectedScenario?.customer_name ?? 'customer'} · ${formatINR(selectedScenario?.amount)} pending · DND and hardship keywords monitored`}
+          right={
+            <button
+              onClick={() => {
+                const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+                if (lastAssistant) speakText(lastAssistant.content);
+              }}
+              className={`flex items-center gap-2 numeric px-3 py-2 text-[10px] tracking-wider border transition-colors ${
+                isSpeaking
+                  ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07] station-cursor'
+                  : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296]'
+              }`}
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              {isSpeaking ? 'TRANSMITTING' : 'PLAY VOICE'}
+            </button>
+          }
+        />
 
-          <button
-            onClick={() => {
-              const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
-              if (lastAssistant) speakText(lastAssistant.content);
-            }}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-              isSpeaking
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
-                : 'bg-[#162238] text-slate-300 border-[#1E2E52] hover:bg-[#1E2E52]'
-            }`}
-          >
-            <Volume2 className="w-3.5 h-3.5 text-blue-400" />
-            <span>{isSpeaking ? 'Speaking...' : 'Play Hinglish Voice'}</span>
-          </button>
-        </div>
-
-        {/* Message Thread */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#080D1A]/60">
+        {/* Transmissions */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#05080F]/40">
           {messages.map((msg, i) => {
             const isUser = msg.role === 'user';
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs shadow-md ${
+                  className={`max-w-[82%] px-3.5 py-2.5 border ${
                     isUser
-                      ? 'bg-[#3395FF] text-white rounded-tr-none'
-                      : 'bg-[#162238] border border-[#1E2E52] text-slate-200 rounded-tl-none'
+                      ? 'border-[#FFB300]/40 bg-[#FFB300]/[0.06] text-[#F5E9C8]'
+                      : 'border-[#2EFF7B]/35 bg-[#2EFF7B]/[0.04] text-[#CFE4F2]'
                   }`}
                 >
-                  <p className="leading-relaxed whitespace-pre-line">{msg.content}</p>
-                  <div
-                    className={`text-[10px] mt-1 text-right ${
-                      isUser ? 'text-blue-100' : 'text-slate-400'
-                    }`}
-                  >
-                    {msg.timestamp}
+                  <div className="numeric text-[9px] tracking-[0.18em] mb-1.5 flex items-center gap-1.5">
+                    <StatusLamp on ink={isUser ? INK.amber : INK.signal} />
+                    <span className={isUser ? 'text-[#FFB300]' : 'text-[#2EFF7B]'}>
+                      {isUser ? 'UPLINK · CUSTOMER' : 'DOWNLINK · PRIYA'}
+                    </span>
+                    <span className="text-[#6A8296]">{msg.timestamp} IST</span>
                   </div>
+                  <p className="text-xs leading-relaxed whitespace-pre-line">{msg.content}</p>
                 </div>
               </div>
             );
           })}
+          {lossOfSignal && (
+            <div className="flex justify-start">
+              <div className="readout-arrival max-w-[82%] px-3.5 py-2.5 border border-[#FF4D4D]/50 bg-[#FF4D4D]/[0.05]">
+                <div className="numeric text-[9px] tracking-[0.18em] mb-1.5 flex items-center gap-1.5 text-[#FF4D4D]">
+                  <StatusLamp on ink={INK.abort} />
+                  LOSS OF SIGNAL · COMMS LOOP
+                </div>
+                <p className="text-xs text-[#CFE4F2] leading-relaxed">
+                  The agent downlink failed mid-transmission. Your uplink was received; the turn was not answered.
+                </p>
+                <p className="numeric text-[10px] text-[#7C93A6] mt-1.5">RETRY THE TRANSMISSION · CHECK BACKEND ON :8000</p>
+              </div>
+            </div>
+          )}
+          {voiceUnsupported && (
+            <div className="flex justify-start">
+              <div className="readout-arrival max-w-[82%] px-3.5 py-2.5 border border-[#FFB300]/40 bg-[#FFB300]/[0.05]">
+                <div className="numeric text-[9px] tracking-[0.18em] mb-1.5 flex items-center gap-1.5 text-[#FFB300]">
+                  <StatusLamp on ink={INK.amber} />
+                  VOICE CHANNEL UNAVAILABLE
+                </div>
+                <p className="text-xs text-[#CFE4F2] leading-relaxed">
+                  This browser has no speech synthesis. The text loop continues; only the Hinglish voice playback is offline.
+                </p>
+              </div>
+            </div>
+          )}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#162238] border border-[#1E2E52] rounded-2xl rounded-tl-none px-4 py-2.5 text-xs text-slate-400 flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce delay-100" />
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce delay-200" />
-                <span>Priya is replying...</span>
+              <div className="px-3.5 py-2.5 border border-[#2EFF7B]/35 bg-[#2EFF7B]/[0.04] numeric text-[11px] text-[#7C93A6] tracking-wider flex items-center gap-2">
+                <StatusLamp on ink={INK.signal} />
+                PRIYA IS COMPOSING ·
+                <span className="station-cursor text-[#2EFF7B]">_</span>
               </div>
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
-        {/* Quick Action Chips */}
-        <div className="px-4 py-2 bg-[#0A1020]/90 border-t border-[#1E2E52]/60 overflow-x-auto no-scrollbar flex items-center gap-2">
-          <span className="text-[11px] text-slate-400 whitespace-nowrap">Test Prompts:</span>
+        {/* Quick transmissions */}
+        <div className="border-t border-[#1C3245] px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#0A101C]">
+          <span className="numeric text-[9px] tracking-[0.18em] text-[#6A8296] shrink-0">TEST VECTOR</span>
           {[
             'Kal shaam 6 baje payment karunga',
             'Direct UPI link WhatsApp pe bhej do',
@@ -292,32 +301,33 @@ export const HinglishVoiceAgent: React.FC = () => {
             <button
               key={prompt}
               onClick={() => handleSend(prompt)}
-              className="text-[11px] bg-[#162238] hover:bg-[#1E2E52] text-slate-300 px-3 py-1 rounded-full whitespace-nowrap border border-[#1E2E52] transition-colors"
+              className="shrink-0 text-[11px] px-3 py-1 border border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296] transition-colors numeric"
             >
               {prompt}
             </button>
           ))}
         </div>
 
-        {/* Input Bar */}
-        <div className="p-3 border-t border-[#1E2E52] bg-[#0A1020] flex items-center space-x-2">
+        {/* Uplink input */}
+        <div className="border-t border-[#1C3245] p-3 flex items-center gap-2 bg-[#0A101C]">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your reply in Hinglish or English (e.g. 'Parson subah karunga')..."
-            className="flex-1 bg-[#162238] border border-[#1E2E52] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3395FF]"
+            placeholder="Uplink a reply — Hinglish or English…"
+            className="station-input flex-1 px-3.5 py-2.5 text-xs caret-signal"
           />
           <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || loading}
-            className="p-2.5 bg-[#3395FF] hover:bg-blue-600 disabled:bg-slate-700 text-white rounded-xl transition-all shadow-md"
+            className="numeric px-4 py-2.5 text-[11px] tracking-[0.14em] border border-[#2EFF7B] text-[#05080F] bg-[#2EFF7B] disabled:border-[#1C3245] disabled:text-[#6A8296] disabled:bg-transparent transition-colors flex items-center gap-2"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
+            TRANSMIT
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

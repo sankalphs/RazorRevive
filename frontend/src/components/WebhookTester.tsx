@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Send, CheckCircle2, ShieldAlert, Sparkles, Copy, Check } from 'lucide-react';
+import { Send, Copy, Check, Radio } from 'lucide-react';
 import { fetchSampleWebhooks, sendWebhookEvent } from '../services/api';
+import { StationHeader, formatINR, ComplianceReadout, stateInk, StatusLamp, INK } from './telemetry';
+
+/* ============================================================
+   STA-05 · SIGNAL INGEST
+   Fire a raw Razorpay webhook at the range and watch the
+   full pipeline answer in one pass: diagnosis, guardrail
+   certification, intervention, settlement.
+   ============================================================ */
 
 export const WebhookTester: React.FC = () => {
   const [samples, setSamples] = useState<Record<string, any>>({});
-  const [selectedSampleKey, setSelectedSampleKey] = useState<string>('payment_failed_gateway');
-  const [jsonPayload, setJsonPayload] = useState<string>('{\n  "event": "payment.failed"\n}');
+  const [selectedSampleKey, setSelectedSampleKey] = useState('payment_failed_gateway');
+  const [jsonPayload, setJsonPayload] = useState('{\n  "event": "payment.failed"\n}');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -26,17 +35,19 @@ export const WebhookTester: React.FC = () => {
     if (samples[key]) {
       setJsonPayload(JSON.stringify(samples[key], null, 2));
       setResult(null);
+      setError(null);
     }
   };
 
   const handleDispatch = async () => {
     try {
+      setError(null);
       setLoading(true);
       const parsed = JSON.parse(jsonPayload);
       const res = await sendWebhookEvent(parsed);
       setResult(res);
     } catch (err: any) {
-      alert(`Invalid JSON or dispatch error: ${err.message}`);
+      setError(err?.message ?? 'Unknown dispatch error');
     } finally {
       setLoading(false);
     }
@@ -49,148 +60,158 @@ export const WebhookTester: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Payload Editor Left */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6 shadow-xl flex flex-col space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Terminal className="w-5 h-5 text-[#3395FF]" />
-            <h3 className="text-sm font-bold text-white">Razorpay Webhook Dispatcher</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Inbound signal */}
+      <section className="panel-graticule flex flex-col" aria-label="Webhook dispatcher">
+        <StationHeader
+          code="STA-05 · INBOUND SIGNAL"
+          title="Razorpay Webhook Dispatcher"
+          subtitle="Fire a raw payment.failed or subscription.halted event at the range. The full pipeline — parse, diagnose, guardrail, intervene, audit — runs on dispatch."
+          right={
+            <button
+              onClick={copyPayload}
+              className="numeric text-[10px] tracking-wider text-[#7C93A6] hover:text-[#2EFF7B] transition-colors flex items-center gap-1.5"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-[#2EFF7B]" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'COPIED' : 'COPY'}
+            </button>
+          }
+        />
+
+        <div className="px-4 sm:px-5 py-4 space-y-4 flex-1 flex flex-col">
+          {/* Preset signals */}
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(samples).map((key) => {
+              const on = selectedSampleKey === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleSelectSample(key)}
+                  aria-pressed={on}
+                  className={`numeric px-3 py-1.5 text-[10px] tracking-wider border transition-colors ${
+                    on
+                      ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07]'
+                      : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296]'
+                  }`}
+                >
+                  {key.replace(/_/g, ' ')}
+                </button>
+              );
+            })}
           </div>
-          <button
-            onClick={copyPayload}
-            className="flex items-center space-x-1 text-slate-400 hover:text-slate-200 text-xs transition-colors"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
-          </button>
-        </div>
-        <p className="text-xs text-slate-400">
-          Simulate incoming Razorpay webhook events to test real-time AI root-cause classification and guardrail interventions.
-        </p>
 
-        {/* Preset Sample Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {Object.keys(samples).map((key) => {
-            const isSelected = selectedSampleKey === key;
-            return (
-              <button
-                key={key}
-                onClick={() => handleSelectSample(key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                  isSelected
-                    ? 'bg-blue-500/15 border-blue-500/40 text-blue-300'
-                    : 'bg-[#162238] border-[#1E2E52] text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {key.replace(/_/g, ' ')}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* JSON Code Area */}
-        <div className="flex-1 min-h-[320px]">
+          {/* Raw signal editor */}
           <textarea
             value={jsonPayload}
             onChange={(e) => setJsonPayload(e.target.value)}
-            className="w-full h-full font-mono text-xs bg-[#080D1A] border border-[#1E2E52] rounded-xl p-4 text-emerald-400 focus:outline-none focus:border-[#3395FF] resize-none"
             spellCheck={false}
+            aria-label="Webhook JSON payload"
+            className="station-input flex-1 min-h-[300px] p-4 text-xs leading-relaxed caret-signal resize-none"
           />
-        </div>
 
-        <button
-          onClick={handleDispatch}
-          disabled={loading}
-          className="w-full py-3 bg-[#3395FF] hover:bg-blue-600 disabled:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
-        >
-          {loading ? (
-            <span>Processing Webhook...</span>
+          <button
+            onClick={handleDispatch}
+            disabled={loading}
+            className={`w-full py-3.5 numeric text-sm font-semibold tracking-[0.12em] border transition-colors flex items-center justify-center gap-2.5 ${
+              loading
+                ? 'border-[#FFB300]/60 text-[#FFB300] bg-[#FFB300]/[0.06] cursor-wait'
+                : 'border-[#2EFF7B] text-[#05080F] bg-[#2EFF7B] hover:shadow-[0_0_30px_-8px_rgba(46,255,123,0.6)] active:translate-y-px'
+            }`}
+          >
+            {loading ? (
+              <>
+                <StatusLamp on ink={INK.amber} />
+                ACQUIRING SIGNAL…
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                DISPATCH WEBHOOK
+              </>
+            )}
+          </button>
+        </div>
+      </section>
+
+      {/* Decision record */}
+      <section className="panel-graticule flex flex-col" aria-label="Autonomous agent decision">
+        <StationHeader
+          code="DECISION RECORD"
+          title="Autonomous Agent Decision"
+          subtitle="Immediate classification, guardrail certification, and intervention dispatched on receipt."
+        />
+        <div className="px-4 sm:px-5 py-4 flex-1">
+          {error ? (
+            <div className="h-full border border-[#FF4D4D]/50 bg-[#FF4D4D]/[0.05] px-4 py-6 text-center">
+              <div className="numeric text-[11px] text-[#FF4D4D] tracking-wider">DISPATCH REJECTED · SIGNAL MALFORMED</div>
+              <p className="text-[11px] text-[#7C93A6] mt-2">{error}</p>
+              <p className="text-[10px] text-[#6A8296] mt-1">Fix the JSON on the left and re-dispatch.</p>
+            </div>
+          ) : result ? (
+            <div className="space-y-4 readout-arrival">
+              {/* Final state */}
+              <div className="grid grid-cols-2 divide-x divide-[#1C3245] border border-[#1C3245] bg-[#05080F]/50">
+                <div className="px-4 py-3.5">
+                  <div className="numeric text-[9px] tracking-[0.18em] text-[#6A8296]">FINAL STATE</div>
+                  <div className={`numeric text-lg mt-2 tracking-tight ${stateInk(result.final_status).phosphor || 'text-[#CFE4F2]'}`}>
+                    {stateInk(result.final_status).label}
+                  </div>
+                </div>
+                <div className="px-4 py-3.5 text-right">
+                  <div className="numeric text-[9px] tracking-[0.18em] text-[#6A8296]">RECOVERED</div>
+                  <div className="numeric text-lg mt-2 tracking-tight text-phosphor">
+                    {formatINR(result.amount_recovered)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Diagnosis */}
+              <div className="border border-[#1C3245] bg-[#0D1524]/60 px-4 py-3.5">
+                <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">
+                  ROOT-CAUSE DIAGNOSTIC · {result.diagnosis.category}
+                </div>
+                <div className="text-[11px] text-[#CFE4F2]">{result.diagnosis.root_cause}</div>
+                <p className="numeric text-[10px] text-[#6A8296] leading-relaxed mt-2.5 border-t border-[#1C3245] pt-2.5">
+                  {result.diagnosis.ai_reasoning}
+                </p>
+              </div>
+
+              {/* Guardrail certification */}
+              <div className="border border-[#1C3245] bg-[#0D1524]/60 px-4 py-3.5">
+                <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">GUARDRAIL CERTIFICATION</div>
+                <div className="flex items-center gap-2.5 text-[11px]">
+                  <ComplianceReadout ok={result.compliance.is_compliant} />
+                  <span className="text-[#7C93A6]">{result.compliance.reason}</span>
+                </div>
+              </div>
+
+              {/* Raw references */}
+              <div className="border border-[#1C3245] bg-[#05080F]/60 px-4 py-3 numeric text-[10px] space-y-1.5">
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#6A8296] tracking-wider">TXN</span>
+                  <span className="text-[#2EFF7B]">{result.transaction_id}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#6A8296] tracking-wider">INTERVENTION</span>
+                  <span className="text-[#CFE4F2]">{result.intervention.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#6A8296] tracking-wider">SETTLEMENT REF</span>
+                  <span className="text-[#CFE4F2]">{result.settlement_ref || 'NONE · DEFERRED OR HARD STOP'}</span>
+                </div>
+              </div>
+            </div>
           ) : (
-            <>
-              <Send className="w-4 h-4" />
-              <span>Simulate Inbound Webhook</span>
-            </>
+            <div className="h-full min-h-[300px] border border-dashed border-[#1C3245] flex flex-col items-center justify-center text-center px-6">
+              <Radio className="w-7 h-7 text-[#6A8296]" />
+              <div className="numeric text-[11px] text-[#7C93A6] mt-3 tracking-wider">CHANNEL QUIET</div>
+              <p className="text-[11px] text-[#6A8296] mt-1.5 leading-relaxed">
+                Select a preset signal on the left and dispatch it to watch the pipeline answer.
+              </p>
+            </div>
           )}
-        </button>
-      </div>
-
-      {/* Real-time Response Right */}
-      <div className="bg-[#101828] border border-[#1E2E52] rounded-2xl p-6 shadow-xl flex flex-col space-y-4">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-5 h-5 text-purple-400" />
-          <h3 className="text-sm font-bold text-white">Autonomous Agent Decision</h3>
         </div>
-        <p className="text-xs text-slate-400">
-          Immediate diagnosis, policy compliance verification, and execution output dispatched by RazorRevive.
-        </p>
-
-        {result ? (
-          <div className="flex-1 space-y-4 overflow-y-auto">
-            {/* Status Card */}
-            <div className="p-4 rounded-xl bg-[#162238] border border-[#1E2E52] flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Final State</span>
-                <div className="text-base font-bold text-white flex items-center space-x-1.5 mt-0.5">
-                  <span>{result.final_status}</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Amount Recovered</span>
-                <div className="text-base font-bold text-emerald-400 mt-0.5">
-                  ₹{result.amount_recovered.toLocaleString('en-IN')}
-                </div>
-              </div>
-            </div>
-
-            {/* AI Diagnosis Details */}
-            <div className="p-4 rounded-xl bg-[#080D1A] border border-[#1E2E52] space-y-2 text-xs">
-              <div className="font-bold text-purple-300 text-xs uppercase tracking-wider">
-                Root-Cause Diagnostic Analysis
-              </div>
-              <div className="text-slate-300">
-                <strong>Failure Category:</strong> {result.diagnosis.category}
-              </div>
-              <div className="text-slate-300">
-                <strong>Detected Cause:</strong> {result.diagnosis.root_cause}
-              </div>
-              <div className="text-slate-400 italic bg-[#162238]/60 p-2.5 rounded-lg border border-[#1E2E52]/40">
-                "{result.diagnosis.ai_reasoning}"
-              </div>
-            </div>
-
-            {/* Compliance Certification */}
-            <div className="p-4 rounded-xl bg-[#080D1A] border border-[#1E2E52] space-y-2 text-xs">
-              <div className="font-bold text-blue-300 text-xs uppercase tracking-wider">
-                Guardrail &amp; Compliance Validation
-              </div>
-              <div className="flex items-center space-x-2 text-slate-300">
-                {result.compliance.is_compliant ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                ) : (
-                  <ShieldAlert className="w-4 h-4 text-rose-400" />
-                )}
-                <span>{result.compliance.reason}</span>
-              </div>
-            </div>
-
-            {/* Raw Audit Log */}
-            <div className="p-3 rounded-xl bg-[#080D1A] border border-[#1E2E52] font-mono text-[11px] text-slate-400 space-y-1">
-              <div>Transaction ID: {result.transaction_id}</div>
-              <div>Intervention: {result.intervention}</div>
-              <div>Settlement Ref: {result.settlement_ref || 'None (Deferred / Hard Stop)'}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-500 border border-dashed border-[#1E2E52] rounded-xl p-8">
-            <Terminal className="w-8 h-8 mb-2 text-slate-600" />
-            <span className="text-xs font-medium">No webhook dispatched yet.</span>
-            <span className="text-[11px] text-slate-500 mt-1">
-              Select a sample payload on the left and click "Simulate Inbound Webhook".
-            </span>
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   );
 };

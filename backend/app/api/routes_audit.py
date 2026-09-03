@@ -20,7 +20,8 @@ async def get_audit_trail(
             intervention=intervention,
             category=category,
             search=search,
-            limit=limit
+            limit=limit,
+            offset=offset
         )
     return audit_logger.get_all(limit=limit, offset=offset)
 

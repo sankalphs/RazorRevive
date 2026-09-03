@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-03T11:53:46+05:30",
+  "title": "Design System: RazorRevive",
+  "extensions": {
+    "colorMeta": {
+      "signal": { "role": "primary", "displayName": "Phosphor Signal Green", "canonical": "#2EFF7B", "tonalRamp": ["#052012", "#0A3B22", "#105632", "#17723F", "#1E8D4C", "#26B25F", "#2EFF7B", "#9DFFC4"] },
+      "amber": { "role": "secondary", "displayName": "Countdown Amber", "canonical": "#FFB300", "tonalRamp": ["#2A1D00", "#4F3800", "#7A5600", "#A87300", "#D69400", "#FFB300", "#FFCB4D", "#FFE299"] },
+      "abort": { "role": "tertiary", "displayName": "Range-Stop Red", "canonical": "#FF4D4D", "tonalRamp": ["#2A0505", "#4F0B0B", "#7A1010", "#A81616", "#D62222", "#FF4D4D", "#FF8A8A", "#FFC2C2"] },
+      "text": { "role": "neutral", "displayName": "Console Text", "canonical": "#CFE4F2", "tonalRamp": ["#0B1219", "#1B2632", "#2C3B4B", "#3E556B", "#5F7A91", "#97B4C8", "#CFE4F2", "#E8F2F9"] },
+      "dim": { "role": "neutral", "displayName": "Secondary Slate", "canonical": "#7C93A6", "tonalRamp": ["#0F141A", "#1E2833", "#2E3C4C", "#3E5165", "#5F7285", "#7C93A6", "#A3B5C4", "#D0DAE3"] },
+      "faint": { "role": "neutral", "displayName": "Microtext Slate", "canonical": "#6A8296", "tonalRamp": ["#0D1218", "#1B242F", "#2A3643", "#394A59", "#48606F", "#6A8296", "#94A8B7", "#C4D0DA"] },
+      "uplink-copy": { "role": "neutral", "displayName": "Uplink Parchment", "canonical": "#F5E9C8", "tonalRamp": ["#241E10", "#483E20", "#6D5E31", "#917F41", "#B6A053", "#D6C585", "#F5E9C8", "#FBF3DF"] },
+      "void": { "role": "neutral", "displayName": "Launch Void", "canonical": "#05080F", "tonalRamp": ["#010204", "#02040A", "#05080F", "#080D19", "#0B1222", "#0E1729", "#111D32", "#152440"] },
+      "panel": { "role": "neutral", "displayName": "Instrument Panel", "canonical": "#0A101C", "tonalRamp": ["#030509", "#060A13", "#0A101C", "#0E1727", "#121E33", "#16253F", "#1B2D4C", "#213659"] },
+      "raise": { "role": "neutral", "displayName": "Raised Control Plate", "canonical": "#0D1524", "tonalRamp": ["#040609", "#070C13", "#0D1524", "#111B2D", "#152237", "#192940", "#1E314C", "#24395A"] },
+      "grid": { "role": "neutral", "displayName": "Graticule Hairline", "canonical": "#12202F", "tonalRamp": ["#04070A", "#081014", "#0C1820", "#12202F", "#18293E", "#1E334E", "#243D5E", "#2B4A73"] },
+      "edge": { "role": "neutral", "displayName": "Panel Edge Steel", "canonical": "#1C3245", "tonalRamp": ["#05090C", "#0A1319", "#0F1D29", "#152838", "#1C3245", "#233F53", "#2A4C61", "#355C74"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Readout Measurement", "purpose": "The big phosphor figures — vehicle-status values and uptime percentages. Mono, tabular, instrument voice." },
+      "headline": { "displayName": "Callsign", "purpose": "RAZORREVIVE in the command bar only. The single bold sans at 17px." },
+      "title": { "displayName": "Console Title", "purpose": "Every StationHeader panel title." },
+      "body": { "displayName": "Human Explanation", "purpose": "Subtitles, transmission text, step bodies — anything a human would say to another human." },
+      "label": { "displayName": "Instrument Stamp", "purpose": "The world's most abundant voice: codes, captions, stamps, table headers, buttons." }
+    },
+    "shadows": [
+      { "name": "glow-signal", "value": "0 1px 0 0 rgba(46,255,123,0.25) inset, 0 0 20px -8px rgba(46,255,123,0.28)", "purpose": "Live signal-green instrument plates (e.g. the RRV smart-sequencer profile panel)." },
+      { "name": "glow-amber", "value": "0 1px 0 0 rgba(255,179,0,0.25) inset, 0 0 20px -8px rgba(255,179,0,0.28)", "purpose": "Live amber instrument plates." },
+      { "name": "glow-abort", "value": "0 1px 0 0 rgba(255,77,77,0.25) inset, 0 0 20px -8px rgba(255,77,77,0.3)", "purpose": "DEGRADED issuer cards on the bank health radar." },
+      { "name": "trace-glow-fill", "value": "0 0 12px rgba(46,255,123,0.5) / 0 0 10px rgba(255,77,77,0.5)", "purpose": "Phosphor halo on trajectory and uptime fill bars, in the bar's own ink." },
+      { "name": "go-hover-bloom", "value": "0 0 30px -8px rgba(46,255,123,0.6)", "purpose": "The GO button's only hover treatment — a green ignition bloom." }
+    ],
+    "motion": [
+      { "name": "readout-arrival", "value": "0.5s cubic-bezier(0.16, 1, 0.3, 1) both (fade + 3px rise + clip-path wipe)", "purpose": "The one shared arrival law for telemetry landing: vehicle readouts, decision records, P2P lock, error states." },
+      { "name": "tab-rail-sweep", "value": "7s linear infinite", "purpose": "Ambient scanline drifting across the station tab rail. The range is live." },
+      { "name": "tco-orbit", "value": "6s linear infinite (stroke-dashoffset 0 to -160)", "purpose": "The TCO orbiter's ascending node circling the mark; also the favicon." },
+      { "name": "cursor-blink", "value": "1.4s steps(1, end) infinite", "purpose": "Station cursor and TRANSMITTING state — a console text cursor." },
+      { "name": "countdown-fill", "value": "300ms", "purpose": "Countdown strip progress fill advancing one phase." },
+      { "name": "bar-fill", "value": "700ms", "purpose": "Trajectory comparison bars settling to their measured widths." },
+      { "name": "hold-spinner", "value": "icon rotate loop while a count runs", "purpose": "Transient hold-state exception on the GO button; do not multiply it." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "GO Button",
+      "kind": "button",
+      "refersTo": "button-go",
+      "description": "The range's primary command — EXECUTE BATCH LAUNCH, DISPATCH WEBHOOK, TRANSMIT — a solid signal-green plate with void text.",
+      "html": "<button class=\"ds-btn-go\">EXECUTE BATCH LAUNCH</button>",
+      "css": ".ds-btn-go { background: #2EFF7B; color: #05080F; border: 1px solid #2EFF7B; border-radius: 0; padding: 16px 24px; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 14px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: box-shadow 0.2s, transform 0.1s; } .ds-btn-go:hover { box-shadow: 0 0 30px -8px rgba(46,255,123,0.6); } .ds-btn-go:active { transform: translateY(1px); } .ds-btn-go:focus-visible { outline: 2px solid #2EFF7B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Hold Button",
+      "kind": "button",
+      "refersTo": "button-go-hold",
+      "description": "The GO button while a count runs — amber ghost, wait cursor, spinner. Amber means hold, never failure.",
+      "html": "<button class=\"ds-btn-hold\">HOLD · COUNT RUNNING</button>",
+      "css": ".ds-btn-hold { background: rgba(255,179,0,0.06); color: #FFB300; border: 1px solid rgba(255,179,0,0.6); border-radius: 0; padding: 16px 24px; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 14px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; cursor: wait; } .ds-btn-hold:focus-visible { outline: 2px solid #2EFF7B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Guard Chip",
+      "kind": "chip",
+      "refersTo": "chip-guard-on",
+      "description": "Squared hardware-guard switch (batch size, verticals, preset signals, test vectors). Selected = signal ink + 7% tint; aria-pressed throughout.",
+      "html": "<button class=\"ds-chip ds-chip--on\" aria-pressed=\"true\">SaaS</button> <button class=\"ds-chip\" aria-pressed=\"false\">OTT</button>",
+      "css": ".ds-chip { background: transparent; color: #7C93A6; border: 1px solid #1C3245; border-radius: 0; padding: 6px 12px; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 12px; cursor: pointer; transition: color 0.15s, border-color 0.15s; } .ds-chip:hover { color: #CFE4F2; border-color: #6A8296; } .ds-chip:focus-visible { outline: 2px solid #2EFF7B; outline-offset: 2px; } .ds-chip--on { border-color: #2EFF7B; color: #2EFF7B; background: rgba(46,255,123,0.07); }"
+    },
+    {
+      "name": "Station Input",
+      "kind": "input",
+      "refersTo": "input-station",
+      "description": "Mono mission-station text field — search queries, uplink composer, raw JSON editor. Raised plate, edge border, signal caret; focus rings in green.",
+      "html": "<input class=\"ds-input\" placeholder=\"QUERY TXN ID / MERCHANT\" />",
+      "css": ".ds-input { background: #0D1524; color: #CFE4F2; border: 1px solid #1C3245; border-radius: 0; padding: 10px 14px; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: 0.05em; caret-color: #2EFF7B; } .ds-input::placeholder { color: #6A8296; } .ds-input:focus { outline: none; border-color: #2EFF7B; box-shadow: 0 0 0 1px #2EFF7B, 0 0 16px -6px rgba(46,255,123,0.5); }"
+    },
+    {
+      "name": "Station Tab",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Square station tab from the five-station rail: mono code + label; active carries a 2px signal underline, 4% tint, and the rotated-45deg notch diamond.",
+      "html": "<nav class=\"ds-tabrail\"><button class=\"ds-tab ds-tab--active\"><span class=\"ds-tab__code\">STA-01</span> LAUNCH</button><button class=\"ds-tab\"><span class=\"ds-tab__code\">STA-02</span> COMMS</button></nav>",
+      "css": ".ds-tabrail { display: flex; border-top: 1px solid #1C3245; background: #0A101C; } .ds-tab { position: relative; display: inline-flex; align-items: center; gap: 10px; padding: 10px 20px; border: none; border-bottom: 2px solid transparent; background: transparent; color: #7C93A6; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 12px; font-weight: 500; text-transform: uppercase; cursor: pointer; transition: color 0.15s; } .ds-tab:hover { color: #CFE4F2; } .ds-tab:focus-visible { outline: 2px solid #2EFF7B; outline-offset: -2px; } .ds-tab__code { font-size: 9px; letter-spacing: 0.15em; color: #6A8296; } .ds-tab--active { color: #2EFF7B; border-bottom-color: #2EFF7B; background: rgba(46,255,123,0.04); } .ds-tab--active .ds-tab__code { color: #2EFF7B; } .ds-tab--active::after { content: ''; position: absolute; bottom: -6px; left: 50%; width: 7px; height: 7px; transform: translateX(-50%) rotate(45deg); background: #2EFF7B; }"
+    },
+    {
+      "name": "Graticule Panel",
+      "kind": "card",
+      "refersTo": "panel-graticule",
+      "description": "Every major console plate: panel base under a 28px etched green grid, 1px steel edge, crown phosphor bloom. Zero radius.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel__code\">STA-01 · BATCH RECOVERY SIMULATION</div><h2 class=\"ds-panel__title\">Launch Countdown — Batch Sequencer</h2><p class=\"ds-panel__sub\">Arm the batch, hold for the range, and measure rupees recovered against a blind naive-dunning baseline.</p></div>",
+      "css": ".ds-panel { position: relative; background-color: #0A101C; background-image: linear-gradient(to right, rgba(46,255,123,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(46,255,123,0.03) 1px, transparent 1px); background-size: 28px 28px; border: 1px solid #1C3245; border-radius: 0; padding: 14px 20px; color: #CFE4F2; } .ds-panel::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 120% 70% at 50% -20%, rgba(46,255,123,0.04), transparent 70%); } .ds-panel__code { font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: #2EFF7B; } .ds-panel__title { font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.375; margin: 4px 0 0 0; color: #CFE4F2; } .ds-panel__sub { font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; line-height: 1.625; max-width: 72ch; margin: 4px 0 0 0; color: #7C93A6; }"
+    },
+    {
+      "name": "Status Readout",
+      "kind": "chip",
+      "refersTo": "readout-state",
+      "description": "One-ink-per-state chip from STATE_INKS: border at 50% ink alpha, 6-8% ink tint, mono uppercase label. Never mix inks for a state.",
+      "html": "<span class=\"ds-state ds-state--signal\">RECOVERED</span> <span class=\"ds-state ds-state--abort\">RANGE STOP</span> <span class=\"ds-state\">IN PROGRESS</span>",
+      "css": ".ds-state { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid rgba(106,130,150,0.6); background: rgba(106,130,150,0.08); color: #CFE4F2; border-radius: 0; font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; } .ds-state--signal { border-color: rgba(46,255,123,0.5); background: rgba(46,255,123,0.06); color: #2EFF7B; } .ds-state--amber { border-color: rgba(255,179,0,0.5); background: rgba(255,179,0,0.06); color: #FFB300; } .ds-state--abort { border-color: rgba(255,77,77,0.5); background: rgba(255,77,77,0.06); color: #FF4D4D; }"
+    },
+    {
+      "name": "Status Lamp",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "7px round instrument lamp; lit in its state ink with an 8px halo, dark faint when off. One of only two circles in the system.",
+      "html": "<span class=\"ds-lamp\"></span>",
+      "css": ".ds-lamp { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: #2EFF7B; box-shadow: 0 0 8px rgba(46,255,123,0.4); }"
+    },
+    {
+      "name": "Transmission Block",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Squared comms message plate: machine downlink in green tint, human uplink in amber tint with Uplink Parchment body. Stamped with direction and IST time.",
+      "html": "<div class=\"ds-tx ds-tx--down\"><div class=\"ds-tx__stamp\">DOWNLINK · PRIYA · 14:02:11 IST</div><p class=\"ds-tx__body\">Maine aapka payment link bhej diya hai — kal raat tak process ho jayega.</p></div><div class=\"ds-tx ds-tx--up\"><div class=\"ds-tx__stamp\">UPLINK · CUSTOMER · 14:03:42 IST</div><p class=\"ds-tx__body\">Kal shaam 6 baje payment karunga</p></div>",
+      "css": ".ds-tx { max-width: 82%; padding: 10px 14px; border: 1px solid rgba(46,255,123,0.35); background: rgba(46,255,123,0.04); border-radius: 0; } .ds-tx--up { border-color: rgba(255,179,0,0.4); background: rgba(255,179,0,0.06); } .ds-tx__stamp { font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: #2EFF7B; margin-bottom: 6px; } .ds-tx--up .ds-tx__stamp { color: #FFB300; } .ds-tx__body { margin: 0; font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; line-height: 1.625; color: #CFE4F2; } .ds-tx--up .ds-tx__body { color: #F5E9C8; }"
+    },
+    {
+      "name": "TCO Orbiter Mark",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The Thermal Cutaway Orbiter brand mark: a 6s orbiting dasharray ellipse over a signal vector line, amber ascending node with a void pinhole.",
+      "html": "<svg class=\"ds-tco\" width=\"40\" height=\"40\" viewBox=\"0 0 64 64\" aria-hidden=\"true\"><ellipse class=\"ds-tco__orbit\" cx=\"32\" cy=\"34\" rx=\"24\" ry=\"15\" fill=\"none\" stroke=\"#2EFF7B\" stroke-width=\"3\" stroke-dasharray=\"151 70\" stroke-linecap=\"round\" style=\"transform-origin: 32px 34px;\"></ellipse><line x1=\"8\" y1=\"48\" x2=\"50\" y2=\"14\" stroke=\"#2EFF7B\" stroke-width=\"4\" stroke-linecap=\"round\"></line><circle cx=\"46\" cy=\"17\" r=\"4\" fill=\"#FFB300\"></circle><circle cx=\"50\" cy=\"14\" r=\"2\" fill=\"#05080F\"></circle></svg>",
+      "css": ".ds-tco__orbit { animation: ds-tco-orbit 6s linear infinite; } @keyframes ds-tco-orbit { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -160; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Mission Control, Sriharikota",
+    "overview": "RazorRevive's recovery engine is rendered as launch operations at the Indian spaceport: every failed payment is a countdown the range safely flies, not a red error badge. The judge lands on a live range — IST clock ticking, T+ mission elapsed running, RBI contact window armed, bank radar sweeping — and grasps the mechanism in one viewport. Density is instrument-plate density: abundant 9–11px mono microtext with wide uppercase tracking, a few large phosphor measurements, and one human subtitle per console explaining what the instruments mean.\n\nThe material is a near-black void carrying one etched green graticule: square-edged instrument plates stamped with station codes (STA-01…05), separated by 1px steel edges. Color is spent almost entirely on three phosphor inks with launch-range semantics — signal green for GO and recovery, amber for holds, counts, and commitments, abort red for range stops — applied one ink per state, never mixed. Type speaks in two voices: IBM Plex Mono is the only voice permitted for measurement, and IBM Plex Sans the only voice for human explanation. The confirmed visual anti-reference is the category default this world refuses: the navy card-grid SaaS dashboard.\n\nThe world was dealt (direction seed c062e598, position 1 of 7 grounded candidates, model pick, code-led build) and finished through a ship-verdict review; this document records the built world from code, and where this text and any earlier intention disagree, the code wins. Three truth laws from the review are binding visual behavior: dead telemetry reads SIGNAL LOST, never zeros; scenario panels not backed by the live ledger carry an ILLUSTRATIVE PROFILE stamp; and no invented metrics anywhere.",
+    "keyCharacteristics": [
+      "Near-black void (#05080F) with one etched green graticule (28px cell) carrying every major panel",
+      "Three phosphor state inks — signal green, amber, range-stop red — one ink per state, never ambiguous",
+      "Two voices: IBM Plex Mono for every measurement, IBM Plex Sans for every human sentence",
+      "Square-edged instrument plates stamped with station codes (STA-01…05)",
+      "Live range furniture: IST clock, persistent T+ mission elapsed, RBI contact-window state, sweeping tab rail, orbiting TCO mark",
+      "Truth laws: SIGNAL LOST over zeros, ILLUSTRATIVE PROFILE stamps on illustrative scenarios, demo data openly labeled",
+      "Self-hosted fonts (no CDN) and a WCAG-measured ink floor (#6A8296 at 5.0:1 on void)"
+    ],
+    "rules": [
+      { "name": "The One-Ink-Per-State Rule", "body": "Every recovery state owns exactly one ink, mapped once in STATE_INKS (telemetry.tsx) and never hand-picked: RECOVERED → signal green, P2P_SCHEDULED → amber (labeled P2P LOCKED), STOPPED_GUARDRAIL → abort red (labeled RANGE STOP), FAILED → abort red, IN_PROGRESS and AT_RISK → neutral Console Text on faint borders. Never mix inks for a state, never invent a second tone.", "section": "colors" },
+      { "name": "The Faint-Floor Rule", "body": "Microtext Slate (#6A8296) is the dimmest ink that may ship on any surface: measured 5.0:1 on void, 4.75:1 on panel, 4.56:1 on raise against the 4.5:1 small-text floor. Secondary copy uses #7C93A6; nothing darker is ever text. Known open item from the review: idle chip borders at 60% faint alpha sit ≈2.45:1, below the 3:1 non-text floor — do not copy that alpha pattern into new components blindly.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Every measured value, timestamp, code, status, price, and machine utterance renders in IBM Plex Mono with tabular figures (the .numeric law: mono, tabular-nums, −0.01em tracking). Every sentence written for a human renders in IBM Plex Sans. No string switches voices.", "section": "typography" },
+      { "name": "The Station Chrome Rule", "body": "Every console panel opens with the same station header before any content: a signal-green mono code (10px, 0.25em, uppercase), a Sans title, one dim human subtitle (~72ch), and an optional right-hand readout slot. No panel invents its own header anatomy.", "section": "layout" },
+      { "name": "The Phosphor Ceiling Rule", "body": "Phosphor glow (box and text) belongs to measured readouts, live status lamps, and active state plates only — never to body copy, never to headings, never as decoration. A glowing paragraph is a category error.", "section": "elevation" },
+      { "name": "The Square Plate Rule", "body": "If a surface is square, it is an instrument; circles are reserved for lamps and orbiters. Never round a plate, chip, or control.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do give every measured value the mono voice with tabular figures — the .numeric law (IBM Plex Mono, tabular-nums, −0.01em).",
+      "Do read state inks from INK / STATE_INKS in telemetry.tsx — one ink per state, never a hand-picked second green, amber, or red.",
+      "Do render dead telemetry as SIGNAL LOST / LOSS OF SIGNAL / DISPATCH REJECTED with a remediation line (e.g. VERIFY BACKEND ON :8000) — never zeros, never blank panels.",
+      "Do stamp any scenario panel not backed by the live ledger ILLUSTRATIVE PROFILE — as STA-03's Profile B does.",
+      "Do keep text inks at Microtext Slate (#6A8296) or brighter (measured 5.0:1 void / 4.75:1 panel / 4.56:1 raise); use #7C93A6 for secondary copy, #CFE4F2 for primary.",
+      "Do keep motion to the four loops — readout arrival (0.5s, cubic-bezier(0.16,1,0.3,1)), tab-rail sweep (7s), TCO orbit (6s), cursor blink (1.4s steps) — plus brief state fills (300ms countdown, 700ms bars).",
+      "Do ship fonts self-hosted from /fonts (latin woff2) — no CDN.",
+      "Do open every console with the StationHeader chrome and stamp it with a station code (STA-01…05 pattern)."
+    ],
+    "donts": [
+      "Don't round corners (0px radius) — circles belong to StatusLamps and the orbiter mark only.",
+      "Don't phosphor-glow body copy or headings; text-phosphor and glow utilities are for measured readouts and live plates only.",
+      "Don't invent metrics, benchmarks, or customers — illustrative scenarios get stamped, demo data stays labeled (footer: DEMO DATA).",
+      "Don't add new looping animations; the hold-spinner on the GO button is the one transient exception in code — don't copy it further.",
+      "Don't style failures as raw red error badges; failure gets mission language (LOSS OF SIGNAL, RANGE STOP, DISPATCH REJECTED) in its one ink with a remediation stamp.",
+      "Don't define colors outside the @theme block and INK constants; alpha tints derive only from the three state inks."
+    ]
+  }
+}

@@ -49,8 +49,9 @@ if FRONTEND_DIST.exists():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        file_path = FRONTEND_DIST / full_path
-        if file_path.exists() and file_path.is_file():
+        file_path = (FRONTEND_DIST / full_path).resolve()
+        # Prevent path traversal: only serve files inside the dist directory
+        if str(file_path).startswith(str(FRONTEND_DIST.resolve())) and file_path.is_file():
             return FileResponse(file_path)
         return FileResponse(FRONTEND_DIST / "index.html")
 

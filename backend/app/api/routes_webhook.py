@@ -125,6 +125,11 @@ async def handle_razorpay_webhook(req: Request):
     phone = notes.get("customer_phone", "+91-9876500000")
     category = notes.get("category", "SaaS")
 
+    # Resolve live issuer health from the bank registry (fall back to a stable default)
+    from ..interventions.mandate_sequencer import BANK_HEALTH_REGISTRY
+    bank_health = BANK_HEALTH_REGISTRY.get(bank, {})
+    bank_uptime = bank_health.get("uptime_pct", 94.0)
+
     # Build internal AtRiskTransaction
     txn = AtRiskTransaction(
         id=f"txn_{uuid.uuid4().hex[:12]}",
@@ -137,7 +142,7 @@ async def handle_razorpay_webhook(req: Request):
         razorpay_error_code=error_code,
         razorpay_error_desc=error_desc,
         issuer_bank=bank,
-        bank_uptime_pct=88.5,
+        bank_uptime_pct=bank_uptime,
         customer=CustomerInfo(
             name=customer_name,
             phone=phone,
