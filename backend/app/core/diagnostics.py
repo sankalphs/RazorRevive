@@ -152,7 +152,22 @@ def parse_llm_diagnosis_json(raw_text: str, txn: AtRiskTransaction) -> Diagnosis
 
 
 def deterministic_adapter(txn: AtRiskTransaction) -> DiagnosisResult:
-    """In-memory deterministic adapter: no network, safe for tests."""
+    """In-memory deterministic adapter: no network, safe for tests.
+
+    Cascade: exact rule match first (precision on known codes), then the
+    local ML classifier (generalisation to novel/paraphrased gateway text),
+    then keyword heuristics. Never blocks recovery.
+    """
+    if txn.razorpay_error_code in DETERMINISTIC_RULES:
+        return fallback_diagnose(txn)
+    try:
+        from .ml_model import ml_diagnose
+
+        ml_result = ml_diagnose(txn)
+        if ml_result is not None:
+            return ml_result
+    except Exception as e:
+        logger.warning(f"ML diagnosis skipped ({e}), using heuristics.")
     return fallback_diagnose(txn)
 
 
@@ -219,7 +234,7 @@ Respond strictly in valid JSON without markdown formatting:
     except Exception as e:
         logger.warning(f"LLM diagnosis failed or timed out ({e}), falling back to deterministic engine.")
 
-    return fallback_diagnose(txn)
+    return deterministic_adapter(txn)
 
 async def diagnose_transaction_ai(txn: AtRiskTransaction, use_llm: bool = True) -> DiagnosisResult:
     """
