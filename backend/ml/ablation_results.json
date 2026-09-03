@@ -1,0 +1,47 @@
+{
+  "test_size": 0.2,
+  "seed": 42,
+  "n": 5000,
+  "results": [
+    {
+      "config": "D_leak_rf",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "weighted_f1": 1.0,
+      "fit_seconds": 0.75,
+      "predict_ms_per_row": 0.123
+    },
+    {
+      "config": "A_desc_logreg",
+      "accuracy": 0.987,
+      "macro_f1": 0.987,
+      "weighted_f1": 0.9869,
+      "fit_seconds": 0.13,
+      "predict_ms_per_row": 0.02
+    },
+    {
+      "config": "B_rich_logreg",
+      "accuracy": 0.985,
+      "macro_f1": 0.985,
+      "weighted_f1": 0.9849,
+      "fit_seconds": 0.17,
+      "predict_ms_per_row": 0.027
+    },
+    {
+      "config": "C_rich_rf",
+      "accuracy": 0.983,
+      "macro_f1": 0.9832,
+      "weighted_f1": 0.983,
+      "fit_seconds": 0.84,
+      "predict_ms_per_row": 0.206
+    },
+    {
+      "config": "E_dummy",
+      "accuracy": 0.208,
+      "macro_f1": 0.1952,
+      "weighted_f1": 0.2089,
+      "fit_seconds": 0.07,
+      "predict_ms_per_row": 0.026
+    }
+  ]
+}
