@@ -1,0 +1,20 @@
+{
+  "reducedMotion": {
+    "arriveAnim": "suppressed",
+    "transitionDur": "1e-05s"
+  },
+  "h1": {
+    "count": 1,
+    "text": "RazorRevive"
+  },
+  "chatInputAria": "Message Priya",
+  "userTimestamp": {
+    "color": "rgb(255, 255, 255)",
+    "bg": "rgb(11, 114, 233)"
+  },
+  "userTimestampContrast": 4.57,
+  "searchAria": "Search audit ledger",
+  "regression": {
+    "consoleErrs": []
+  }
+}

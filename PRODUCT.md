@@ -12,7 +12,7 @@ Primary: Razorpay Buildathon 2026 judges (engineers, fintech operators, product 
 
 ## Product Purpose
 
-RazorRevive is an autonomous AI revenue-recovery engine for Indian merchants. It ingests failed-payment events (UPI Autopay/eNACH mandate failures, checkout drop-offs, soft declines, B2B overdue invoices), runs an LLM root-cause diagnostician (MiniMax-M3 via GMI, with a deterministic rule-map fallback that never blocks recovery), then dispatches bounded, RBI-compliant recovery interventions: smart mandate-retry sequencing around live bank-gateway health, a bilingual Hinglish voice/WhatsApp agent with a Promise-to-Pay tracker, margin-capped checkout incentives, and a 3-stage B2B receivables escalator. Every decision lands in an immutable audit ledger with CSV export; a batch simulator proves ROI against a naive-dunning baseline. Success = judges grasp the mechanism, believe the compliance story, and remember the demo.
+RazorRevive is an autonomous AI auto-responder for failed-payment losses, built for the Razorpay Buildathon 2026 "AI Risk Manager" track: stop the merchant losing money to failed payments, chargebacks-adjacent churn, and wasted dunning — defense-only. It ingests failed-payment events (UPI Autopay/eNACH mandate failures, checkout drop-offs, soft declines, B2B overdue invoices), runs an LLM root-cause diagnostician (MiniMax-M3 via GMI, with a deterministic rule-map fallback that never blocks recovery), then dispatches bounded, RBI-compliant recovery interventions: smart mandate-retry sequencing around live bank-gateway health, a bilingual Hinglish voice/WhatsApp agent with a Promise-to-Pay tracker, margin-capped checkout incentives, and a 3-stage B2B receivables escalator. Every decision lands in an immutable audit ledger with CSV export; a batch simulator measures AI vs naive-dunning baseline with honest metrics (win rates, incremental lift, ROI, false-positive cost avoided via guardrail stops). Success = judges grasp the mechanism, believe the compliance story, and remember the demo.
 
 ## Positioning
 
@@ -20,7 +20,7 @@ Recovery that is diagnostically intelligent and regulatorily constrained in one 
 
 ## Operating Context
 
-Single-page demo app (tab-based, no URL routing), fully in-memory backend state, all data simulated or LLM-generated — no real Razorpay keys, no database. Judges click through five views: Batch Simulator & ROI, Hinglish Voice/P2P Agent, Mandate Sequencer & Bank Health, Compliance Audit Ledger, Webhook Sandbox. KPI figures (₹ at risk, recovered, win rates, ROI multiplier, guardrail stops) are computed from the live in-memory ledger and must remain real endpoint data.
+Single-page demo app (tab-based, no URL routing), fully in-memory backend state, all data simulated or LLM-generated — no real Razorpay keys, no database. Judges click through five tabs: Simulation (batch run + AI vs baseline results), AI Agent (Hinglish chat + promise-to-pay), Bank Health (issuer uptime + retry strategy comparison), Audit Ledger (every decision, exportable), Webhooks (live event testing). KPI figures (₹ at risk, recovered, win rates, ROI multiplier, guardrail stops) are computed from the live in-memory ledger and must remain real endpoint data.
 
 ## Capabilities and Constraints
 
@@ -56,4 +56,10 @@ Single-page demo app (tab-based, no URL routing), fully in-memory backend state,
 
 ## Accessibility & Inclusion
 
-Dark-first demo surface; maintain WCAG-conscious contrast for judge readability on projectors and laptops.
+Light, minimal demo surface (white cards on a soft gray ground); WCAG AA contrast maintained (measured: body text ≥4.5:1) for judge readability on projectors and laptops.
+
+## Track Commitments
+
+- Track: AI Risk Manager (Razorpay Buildathon 2026) — "stop the merchant losing money" via a working auto-responder for one class of loss (failed payments), with measured performance against a naive baseline.
+- Defense-only: the engine never contacts customers outside RBI hours, never exceeds 3 touchpoints/7 days, and hard-stops unrecoverable cases — nothing offense-capable ships.
+- Honest metrics: false-positive cost is surfaced, not hidden — guardrail stops ("unsafe actions blocked") appear on the landing view, and baseline harassment-rule tests exist in the backend suite.

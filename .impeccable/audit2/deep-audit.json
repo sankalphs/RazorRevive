@@ -1,0 +1,225 @@
+[
+  {
+    "vp": "desktop",
+    "type": "NO-REDUCED-MOTION"
+  },
+  {
+    "vp": "desktop",
+    "type": "TAB-ORDER",
+    "order": [
+      {
+        "tag": "BUTTON",
+        "text": "Simulation"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "AI Agent"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Bank Health"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Audit Ledger"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Webhooks"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "50"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "100"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "250"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "500"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "SaaS"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "D2C"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "B2B"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "OTT"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "MiniMax-M3 LLM: on"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Run simulation"
+      }
+    ]
+  },
+  {
+    "type": "SIM-RUN-RESULT",
+    "text": "RazorRevive\n\nAI auto-responder that recovers failed payments — safely, within RBI rules\n\nSimulation\nAI Agent\nBank Health\nAudit Ledger\nWebhooks\n₹6,68,496\nRevenue at risk\n100 failed payments and drop-offs\n₹2,48,393\nRecovered by AI\n37.2% recovery rate vs 10.3% for basic retries\n+₹1,79,622\nExtra vs basic retries\n+261% more revenue recovered\n122× return\nOn agent running cost\n33 unsafe actions blocked\nRun a recovery simulation\n\nProcess a batch of failed payments through the AI engine — diagnosis, safety checks, then the right recovery action for each one.\n\nBatch size\n50\n100\n250\n500\nBusiness types\nSa"
+  },
+  {
+    "type": "LEDGER-EXPAND-OK"
+  },
+  {
+    "type": "WEBHOOK-RESULT",
+    "text": "y event — or paste your own — and send it through the full pipeline: diagnosis, safety checks, action.\n\nCopy\nPayment Failed Gateway\nSubscription Halted Insufficient Funds\nHard Decline Card Expired\nProcessing…\n\nThe first response can take a few seconds while the AI diagnostician reasons.\n\nWhat the engine decided\n\nThe classification, safety verdict, and action taken on receipt.\n\nProcessing the event…\n\nDiagnosing the failure, checking safety rules, choosing an action.\n\nRazorRevive\n·\nRazorpay Buildathon 2026 submission\nAI Risk Manager · failed-payment recovery · RBI-compliant by design · demo data"
+  },
+  {
+    "type": "AGENT-HEADING",
+    "text": [
+      "Try a scenario",
+      "Promise to pay",
+      "Priya · cult.fit"
+    ]
+  },
+  {
+    "type": "PRIYA-HEADING-RAW",
+    "text": "\"Priya · cult.fit\""
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 119,
+    "h": 42,
+    "text": "Simulation",
+    "tag": "BUTTON",
+    "cls": "flex items-center gap-2 px-3.5 py-2.5 text-[13.5px] font-med"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 106,
+    "h": 42,
+    "text": "AI Agent",
+    "tag": "BUTTON",
+    "cls": "flex items-center gap-2 px-3.5 py-2.5 text-[13.5px] font-med"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 128,
+    "h": 42,
+    "text": "Bank Health",
+    "tag": "BUTTON",
+    "cls": "flex items-center gap-2 px-3.5 py-2.5 text-[13.5px] font-med"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 131,
+    "h": 42,
+    "text": "Audit Ledger",
+    "tag": "BUTTON",
+    "cls": "flex items-center gap-2 px-3.5 py-2.5 text-[13.5px] font-med"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 117,
+    "h": 42,
+    "text": "Webhooks",
+    "tag": "BUTTON",
+    "cls": "flex items-center gap-2 px-3.5 py-2.5 text-[13.5px] font-med"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 45,
+    "h": 34,
+    "text": "50",
+    "tag": "BUTTON",
+    "cls": "numeric px-3.5 py-1.5 text-[13px] rounded-lg border transiti"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 53,
+    "h": 34,
+    "text": "100",
+    "tag": "BUTTON",
+    "cls": "numeric px-3.5 py-1.5 text-[13px] rounded-lg border transiti"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 53,
+    "h": 34,
+    "text": "250",
+    "tag": "BUTTON",
+    "cls": "numeric px-3.5 py-1.5 text-[13px] rounded-lg border transiti"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 53,
+    "h": 34,
+    "text": "500",
+    "tag": "BUTTON",
+    "cls": "numeric px-3.5 py-1.5 text-[13px] rounded-lg border transiti"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 59,
+    "h": 34,
+    "text": "SaaS",
+    "tag": "BUTTON",
+    "cls": "px-3.5 py-1.5 text-[13px] rounded-lg border transition-color"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 55,
+    "h": 34,
+    "text": "D2C",
+    "tag": "BUTTON",
+    "cls": "px-3.5 py-1.5 text-[13px] rounded-lg border transition-color"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 55,
+    "h": 34,
+    "text": "B2B",
+    "tag": "BUTTON",
+    "cls": "px-3.5 py-1.5 text-[13px] rounded-lg border transition-color"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 54,
+    "h": 34,
+    "text": "OTT",
+    "tag": "BUTTON",
+    "cls": "px-3.5 py-1.5 text-[13px] rounded-lg border transition-color"
+  },
+  {
+    "vp": "mobile",
+    "type": "SMALL-TARGET",
+    "w": 150,
+    "h": 34,
+    "text": "MiniMax-M3 LLM: on",
+    "tag": "BUTTON",
+    "cls": "px-3.5 py-1.5 text-[13px] rounded-lg border transition-color"
+  },
+  {
+    "vp": "mobile",
+    "type": "NO-REDUCED-MOTION"
+  }
+]

@@ -14,6 +14,7 @@ from ..models.schemas import (
 from .batch_generator import generate_synthetic_batch
 from ..core.engine import RecoveryOrchestrator
 from ..core.audit_logger import audit_logger
+from ..core.policy_guardrails import baseline_should_skip
 
 class BatchSimulationEngine:
     """
@@ -38,11 +39,10 @@ class BatchSimulationEngine:
         recovered_count = 0
 
         for txn in batch:
-            # Baseline fails completely on checkout drop-offs and hard declines
-            if txn.razorpay_error_code in ["CARD_EXPIRED", "FRAUD_DETECTED", "ACCOUNT_CLOSED"]:
-                continue
-            # Customers the naive loop keeps harassing never pay again this cycle
-            if txn.customer.is_dnd or txn.customer.is_hardship or txn.attempts_made >= 3:
+            # Stop logic is owned by the Guardrail module — the baseline
+            # only asks whether a careful engine would refuse the row.
+            # (Covers hard-stop codes, DND / hardship, and the touch ceiling.)
+            if baseline_should_skip(txn):
                 continue
             if txn.channel == "MAGIC_CHECKOUT":
                 # Naive email cart abandonment has ~5% conversion

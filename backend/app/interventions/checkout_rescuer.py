@@ -1,6 +1,7 @@
 import random
 from typing import Dict, Any, Tuple
 from ..models.schemas import AtRiskTransaction, RecoveryStatus
+from .base import INTERVENTION_BASE_COSTS
 
 class CheckoutDropOffRescuer:
     """
@@ -45,7 +46,8 @@ class CheckoutDropOffRescuer:
         # Win-back probability for dynamic personalized Magic Checkout links is ~68%
         success_prob = 0.68
         is_recovered = (random.random() < success_prob)
-        cost_incurred = 0.85 + offer["discount_amount"]  # SMS/WhatsApp dispatch + incentive margin cost
+        # Single owner of checkout cost: base dispatch fee + funded discount.
+        cost_incurred = INTERVENTION_BASE_COSTS["CHECKOUT_DYNAMIC_OFFER"] + offer["discount_amount"]
 
         if is_recovered:
             settlement_ref = f"pay_magic_{random.randint(1000000, 9999999)}"
@@ -59,6 +61,7 @@ class CheckoutDropOffRescuer:
                     "incentive_applied": offer["incentive_description"],
                     "discount_funded": offer["discount_amount"],
                     "recovered_amount": recovered_amount,
+                    "cost_incurred": cost_incurred,
                     "note": f"Customer converted via personalized Magic Checkout link with 1-click UPI intent."
                 },
                 recovered_amount
@@ -69,6 +72,8 @@ class CheckoutDropOffRescuer:
                 {
                     "action": "CHECKOUT_DROPOFF_EXPIRED",
                     "magic_link": offer["magic_link"],
+                    "discount_funded": offer["discount_amount"],
+                    "cost_incurred": cost_incurred,
                     "note": "Customer viewed offer link but did not complete transaction within 3 hours. Cooldown initiated."
                 },
                 0.0

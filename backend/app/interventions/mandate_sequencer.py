@@ -2,6 +2,7 @@ import random
 from typing import Dict, Any, Tuple
 from datetime import datetime, timedelta
 from ..models.schemas import AtRiskTransaction, RecoveryStatus
+from .base import INTERVENTION_BASE_COSTS
 
 # Real-time simulated uptime status for major Indian banks
 BANK_HEALTH_REGISTRY = {
@@ -21,6 +22,11 @@ class MandateRetrySequencer:
     2. Indian salary credit cycles (28th - 5th of month)
     3. Low-traffic morning clearing windows (09:00 - 10:30 AM IST)
     """
+
+    @staticmethod
+    def get_registry_snapshot() -> Dict[str, Any]:
+        """Read-only snapshot of bank health behind the module seam."""
+        return {code: dict(info) for code, info in BANK_HEALTH_REGISTRY.items()}
 
     @staticmethod
     def get_bank_health(bank_code: str) -> Dict[str, Any]:
@@ -81,7 +87,7 @@ class MandateRetrySequencer:
         success_prob = max(0.40, min(0.92, success_prob))
 
         is_recovered = (random.random() < success_prob)
-        cost_incurred = 1.25  # NPCI / Bank retry API fee in INR
+        cost_incurred = INTERVENTION_BASE_COSTS["SMART_MANDATE_RETRY"]
 
         if is_recovered:
             settlement_ref = f"pay_mandate_{random.randint(1000000, 9999999)}"
@@ -93,6 +99,7 @@ class MandateRetrySequencer:
                     "bank": txn.issuer_bank,
                     "strategy": window["strategy"],
                     "retry_attempt": txn.attempts_made + 1,
+                    "cost_incurred": cost_incurred,
                     "note": f"Mandate auto-cleared after smart delay ({window['delay_hours']}h) upon bank recovery."
                 },
                 txn.amount
@@ -105,6 +112,7 @@ class MandateRetrySequencer:
                     "bank": txn.issuer_bank,
                     "strategy": window["strategy"],
                     "retry_attempt": txn.attempts_made + 1,
+                    "cost_incurred": cost_incurred,
                     "note": "Smart retry exhausted for this cycle. Fallback to WhatsApp Magic Payment Link."
                 },
                 0.0

@@ -32,6 +32,8 @@ export interface ComplianceCheck {
   deferred_until_ist?: string;
 }
 
+export type ActionDetails = Record<string, unknown>;
+
 export interface AuditLogEntry {
   id: string;
   transaction_id: string;
@@ -44,7 +46,7 @@ export interface AuditLogEntry {
   diagnosis: DiagnosisResult;
   compliance: ComplianceCheck;
   intervention: string;
-  action_details: Record<string, any>;
+  action_details: ActionDetails;
   final_status: string;
   settlement_ref?: string;
 }
@@ -89,7 +91,7 @@ export interface ChatInteractionResponse {
   reply: string;
   audio_text_hinglish: string;
   detected_intent?: string;
-  p2p_details?: any;
+  p2p_details?: PromiseToPayRecord | null;
   next_action: string;
 }
 
@@ -107,7 +109,26 @@ export interface PromiseToPayRecord {
   followup_due: string;
 }
 
-const API_BASE = "/api";
+export interface BankHealthInfo {
+  name: string;
+  uptime_pct: number;
+  status: string;
+  peak_hours: string;
+}
+
+export interface PresetScenario {
+  id: string;
+  title: string;
+  customer_name: string;
+  merchant_name: string;
+  amount: number;
+  failure_reason: string;
+  initial_message: string;
+}
+
+export type WebhookPayload = Record<string, unknown>;
+
+export const API_BASE = "/api";
 
 export async function fetchLatestBatch(): Promise<BatchSummary> {
   const res = await fetch(`${API_BASE}/batch/latest`);
@@ -149,13 +170,13 @@ export async function fetchP2PRecords(): Promise<PromiseToPayRecord[]> {
   return res.json();
 }
 
-export async function fetchBankHealth(): Promise<Record<string, any>> {
+export async function fetchBankHealth(): Promise<Record<string, BankHealthInfo>> {
   const res = await fetch(`${API_BASE}/agent/bank-health`);
   if (!res.ok) throw new Error("Failed to fetch bank health");
   return res.json();
 }
 
-export async function fetchPresetScenarios(): Promise<any[]> {
+export async function fetchPresetScenarios(): Promise<PresetScenario[]> {
   const res = await fetch(`${API_BASE}/agent/scenarios`);
   if (!res.ok) throw new Error("Failed to fetch scenarios");
   return res.json();
@@ -177,7 +198,7 @@ export async function fetchAuditTrail(
   return res.json();
 }
 
-export async function sendWebhookEvent(payload: any): Promise<AuditLogEntry> {
+export async function sendWebhookEvent(payload: WebhookPayload): Promise<AuditLogEntry> {
   const res = await fetch(`${API_BASE}/webhook/razorpay`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -187,7 +208,7 @@ export async function sendWebhookEvent(payload: any): Promise<AuditLogEntry> {
   return res.json();
 }
 
-export async function fetchSampleWebhooks(): Promise<Record<string, any>> {
+export async function fetchSampleWebhooks(): Promise<Record<string, WebhookPayload>> {
   const res = await fetch(`${API_BASE}/webhook/samples`);
   if (!res.ok) throw new Error("Failed to fetch sample webhooks");
   return res.json();

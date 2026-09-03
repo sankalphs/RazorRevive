@@ -9,29 +9,23 @@ import { WebhookTester } from './components/WebhookTester';
 import { type BatchSummary, fetchLatestBatch } from './services/api';
 
 /* ============================================================
-   DIRECTION CONTRACT · seed c062e598 (code-led)
-   THESIS: The autonomous recovery engine as launch
-   operations at Sriharikota — every failed payment a
-   countdown the range safely flies, not a red error badge.
-   Refuses the category default: navy card-grid dashboard.
-   OWN-WORLD: near-black void #05080F, etched green
-   graticule panels, IBM Plex Mono telemetry readouts in
-   three phosphor inks — signal green GO, amber P2P/hold,
-   abort red range-stop. Panels are square-edged instrument
-   plates with stamped station codes (STA-01…05).
-   STORY: A judge lands on a live range — IST clock
-   ticking, guardrails armed, bank radar sweeping — grasps
-   the mechanism in one viewport, and trusts the compliance
-   story because every decision is logged, inked, and
-   exportable.
-   FIRST VIEWPORT: command bar (TCO orbiter mark, RAZOR-
-   REVIVE callsign, T+ mission clock, RBI window state)
-   over a five-station tab rail; below, the Vehicle Status
-   Board — four phosphor readouts on one graticule wall —
-   then STA-01's launch sequencer with the GO button as
-   primary action.
-   FORM: Mission Control, Sriharikota — position 1 of 7
-   grounded candidates, model pick, seed c062e598.
+   DIRECTION CONTRACT · canon, played straight (user-pinned)
+   THESIS: A recovery-risk console a first-time judge reads
+   without a decoder ring — what failed, what the AI did,
+   what it recovered, what it safely refused to touch.
+   Refuses the incumbent: launch-range jargon on every panel.
+   OWN-WORLD: white cards on a #F7F8FA ground, 8px base radius
+   stepped for cards (12px) and chat bubbles (16px), IBM Plex
+   Sans voice, one blue accent (#0B72E9) for action, semantic
+   tints only for status. Data stays IBM Plex Mono.
+   STORY: A judge lands, understands in one viewport that
+   this is an AI auto-responder for failed payments with
+   safety rules, reads honest metrics, and trusts the ledger.
+   FIRST VIEWPORT: compact header (product name, tagline,
+   tab nav) over four key numbers, then the simulator with
+   a single primary "Run simulation" button.
+   FORM: minimal operations dashboard, user-pinned in plain
+   words; the standing exit taken, canon at full fidelity.
    FINISH: unreviewed and undocumented is unfinished; this
    build ends with the finish review, the verdict, DESIGN.md,
    and every shipping raster carrying its provenance.
@@ -59,10 +53,10 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#05080F] text-[#CFE4F2] flex flex-col selection:bg-[#2EFF7B] selection:text-[#05080F]">
+    <div className="min-h-screen bg-page text-ink flex flex-col selection:bg-accent selection:text-white">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-6 space-y-6">
         <MetricsOverview summary={summary} loading={loading} />
 
         {activeTab === 'batch' && (
@@ -74,16 +68,15 @@ export function App() {
         {activeTab === 'webhook' && <WebhookTester />}
       </main>
 
-      {/* Range sign-off */}
-      <footer className="border-t border-[#1C3245] bg-[#0A101C] mt-10">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 numeric text-[10px] tracking-wider text-[#6A8296]">
-          <div className="flex items-center gap-2.5">
-            <span className="text-[#7C93A6]">RAZORREVIVE</span>
+      <footer className="border-t border-line bg-white mt-10">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[12px] text-ink-3">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-ink-2">RazorRevive</span>
             <span>·</span>
-            <span>RAZORPAY BUILDATHON 2026 SUBMISSION</span>
+            <span>Razorpay Buildathon 2026 submission</span>
           </div>
           <div className="text-center sm:text-right">
-            AUTONOMOUS AI REVENUE RECOVERY · BOUNDED INTERVENTIONS · RBI COMPLIANT · DEMO DATA
+            AI Risk Manager · failed-payment recovery · RBI-compliant by design · demo data
           </div>
         </div>
       </footer>

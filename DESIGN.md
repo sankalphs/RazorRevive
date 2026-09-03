@@ -1,33 +1,42 @@
 ---
 name: RazorRevive
-description: Mission control for autonomous, RBI-compliant revenue recovery — every failed payment a countdown the range safely flies.
+description: A minimal, light, plain-English operations dashboard for an AI failed-payment recovery engine — white cards on soft gray, one blue accent for action, honest metrics a first-time judge reads without a decoder ring.
 colors:
-  signal: "#2EFF7B"
-  amber: "#FFB300"
-  abort: "#FF4D4D"
-  text: "#CFE4F2"
-  dim: "#7C93A6"
-  faint: "#6A8296"
-  uplink-copy: "#F5E9C8"
-  void: "#05080F"
-  panel: "#0A101C"
-  raise: "#0D1524"
-  grid: "#12202F"
-  edge: "#1C3245"
+  page: "#F7F8FA"
+  card: "#FFFFFF"
+  line: "#E4E7EC"
+  line-strong: "#D0D5DD"
+  ink: "#101828"
+  ink-2: "#475467"
+  ink-3: "#667085"
+  ink-4: "#98A2B3"
+  accent: "#0B72E9"
+  accent-strong: "#0A5FC4"
+  accent-soft: "#EFF8FF"
+  ok: "#067647"
+  ok-soft: "#ECFDF3"
+  ok-line: "#ABEFC6"
+  warn: "#B54708"
+  warn-soft: "#FFFAEB"
+  warn-line: "#FEDF89"
+  bad: "#B42318"
+  bad-soft: "#FEF3F2"
+  bad-line: "#FECDCA"
+  wash: "#F2F4F7"
 typography:
   display:
     fontFamily: "IBM Plex Mono, ui-monospace, Cascadia Mono, Consolas, monospace"
-    fontSize: "26px"
-    fontWeight: 400
+    fontSize: "28px"
+    fontWeight: 600
     lineHeight: 1
-    letterSpacing: "-0.025em"
+    letterSpacing: "-0.01em"
     fontFeature: "tnum"
   headline:
     fontFamily: "IBM Plex Sans, -apple-system, Segoe UI, Roboto, sans-serif"
     fontSize: "17px"
     fontWeight: 700
     lineHeight: 1
-    letterSpacing: "-0.025em"
+    letterSpacing: "-0.02em"
   title:
     fontFamily: "IBM Plex Sans, -apple-system, Segoe UI, Roboto, sans-serif"
     fontSize: "15px"
@@ -35,235 +44,147 @@ typography:
     lineHeight: 1.375
   body:
     fontFamily: "IBM Plex Sans, -apple-system, Segoe UI, Roboto, sans-serif"
-    fontSize: "12px"
+    fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.625
-  label:
-    fontFamily: "IBM Plex Mono, ui-monospace, Cascadia Mono, Consolas, monospace"
-    fontSize: "10px"
-    fontWeight: 500
-    lineHeight: 1
-    letterSpacing: "0.18em"
-rounded:
-  none: "0px"
-  lamp: "9999px"
-spacing:
-  panel-gap: "20px"
-  gutter: "16px"
-  gutter-wide: "20px"
-  graticule-cell: "28px"
-components:
-  button-go:
-    backgroundColor: "{colors.signal}"
-    textColor: "{colors.void}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "16px 24px"
-  button-go-hold:
-    backgroundColor: "rgba(255, 179, 0, 0.06)"
-    textColor: "{colors.amber}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "16px 24px"
-  chip-guard-on:
-    backgroundColor: "rgba(46, 255, 123, 0.07)"
-    textColor: "{colors.signal}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "6px 12px"
-  chip-guard-off:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "6px 12px"
-  input-station:
-    backgroundColor: "{colors.raise}"
-    textColor: "{colors.text}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "10px 14px"
-  nav-tab-active:
-    backgroundColor: "rgba(46, 255, 123, 0.04)"
-    textColor: "{colors.signal}"
-    rounded: "{rounded.none}"
-    padding: "10px 20px"
-  nav-tab-idle:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    rounded: "{rounded.none}"
-    padding: "10px 20px"
-  panel-graticule:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.none}"
-  readout-state:
-    backgroundColor: "rgba(46, 255, 123, 0.06)"
-    textColor: "{colors.signal}"
-    typography: "{typography.label}"
-    rounded: "{rounded.none}"
-    padding: "3px 8px"
-  readout-phosphor:
-    textColor: "{colors.signal}"
-    typography: "{typography.display}"
+  caption:
+    fontFamily: "IBM Plex Sans, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.5
 ---
 
-# Design System: RazorRevive
+# RazorRevive — Design
 
-## Overview
+## 1. Overview / Creative North Star
 
-**Creative North Star: "Mission Control, Sriharikota"**
+RazorRevive (Razorpay Buildathon 2026, AI Risk Manager track) is a **light, minimal, plain-English operations dashboard**: an AI auto-responder for failed payments that a first-time judge understands in one viewport — what failed, what the AI did, what it recovered, what it safely refused to touch. The UI voice is plain words: "Recovered", "Stopped by safety rule", "Promise to pay", "Can't reach the backend". The footer states the truth plainly: "AI Risk Manager · failed-payment recovery · RBI-compliant by design · demo data".
 
-RazorRevive's recovery engine is rendered as launch operations at the Indian spaceport: every failed payment is a countdown the range safely flies, not a red error badge. The judge lands on a live range — IST clock ticking, T+ mission elapsed running, RBI contact window armed, bank radar sweeping — and grasps the mechanism in one viewport. Density is instrument-plate density: abundant 9–11px mono microtext with wide uppercase tracking, a few large phosphor measurements, and one human subtitle per console explaining what the instruments mean.
+It refuses two things: the incumbent habit of launch-range jargon on every panel, and its own dead previous incarnation — a dark "mission control" world. No dark theme, no glow, no telemetry cosplay. White cards on a #F7F8FA ground, measured numerals, and honest metrics (guardrail stops and false-positive cost surfaced on the landing view, never hidden; demo merchants openly labeled, no fabricated evidence).
 
-The material is a near-black void carrying one etched green graticule: square-edged instrument plates stamped with station codes (STA-01…05), separated by 1px steel edges. Color is spent almost entirely on three phosphor inks with launch-range semantics — signal green for GO and recovery, amber for holds, counts, and commitments, abort red for range stops — applied one ink per state, never mixed. Type speaks in two voices: IBM Plex Mono is the only voice permitted for measurement, and IBM Plex Sans the only voice for human explanation. The confirmed visual anti-reference is the category default this world refuses: the navy card-grid SaaS dashboard.
+**Rules the code enforces:**
 
-The world was dealt (direction seed `c062e598`, position 1 of 7 grounded candidates, model pick, code-led build) and finished through a ship-verdict review; this document records the built world from code, and where this text and any earlier intention disagree, the code wins. Three truth laws from the review are binding visual behavior: dead telemetry reads SIGNAL LOST, never zeros; scenario panels not backed by the live ledger carry an ILLUSTRATIVE PROFILE stamp; and no invented metrics anywhere.
+- **One accent for action only.** #0B72E9 appears on primary buttons, links, active tabs, selected chips, user chat bubbles, focus rings — never on static prose.
+- **Semantic tints for status only.** ok/warn/bad colors and their soft/line tints encode outcomes; they are never decorative.
+- **The `.numeric` mono law.** Every measured value (₹, %, counts, timestamps, IDs, sizes) renders in IBM Plex Mono with tabular-nums.
+- **`STATUS_TONES` is the single authority** for status labels, text/bg/border tones, and icon mapping — no component invents its own status copy or hexes.
+- **A dead backend never reads as zeros.** It reads "Can't reach the backend … a dead backend should never look like zero recovery" with a remedial hint.
+- **Every view carries loading / error / empty states** (em-dash stats, dashed-border placeholders, bad-tinted failures in words).
+- **Machine names are humanized at the render boundary** (`SMART_MANDATE_RETRY` → "smart mandate retry"; `FAILED` → "Not recovered"; `HARD_STOP_NO_ACTION` → "Stopped — unsafe to act").
 
-**Key Characteristics:**
-- Near-black void (#05080F) with one etched green graticule (28px cell) carrying every major panel
-- Three phosphor state inks — signal green, amber, range-stop red — one ink per state, never ambiguous
-- Two voices: IBM Plex Mono for every measurement, IBM Plex Sans for every human sentence
-- Square-edged instrument plates stamped with station codes (STA-01…05)
-- Live range furniture: IST clock, persistent T+ mission elapsed, RBI contact-window state, sweeping tab rail, orbiting TCO mark
-- Truth laws: SIGNAL LOST over zeros, ILLUSTRATIVE PROFILE stamps on illustrative scenarios, demo data openly labeled
-- Self-hosted fonts (no CDN) and a WCAG-measured ink floor (#6A8296 at 5.0:1 on void)
+## 2. Colors
 
-## Colors
+All tokens live in the single `@theme` block in `frontend/src/index.css`; every component reads from here.
 
-The palette is a deep blue-black instrument field on which exactly three phosphor inks do all the semantic work; everything else is surface, edge, and ink ramp.
+| Role | Token | Hex |
+|---|---|---|
+| Page ground | `page` | `#F7F8FA` |
+| Card surface | `card` | `#FFFFFF` |
+| Hairline | `line` | `#E4E7EC` |
+| Strong line (fields, unselected chips) | `line-strong` | `#D0D5DD` |
+| Ink ramp | `ink` / `ink-2` / `ink-3` / `ink-4` | `#101828` / `#475467` / `#667085` / `#98A2B3` |
+| Accent (action) | `accent` | `#0B72E9` |
+| Accent hover / pressed | `accent-strong` | `#0A5FC4` |
+| Accent wash (selected chips, soft fills) | `accent-soft` | `#EFF8FF` |
+| OK text / soft / line | `ok` / `ok-soft` / `ok-line` | `#067647` / `#ECFDF3` / `#ABEFC6` |
+| Warn text / soft / line | `warn` / `warn-soft` / `warn-line` | `#B54708` / `#FFFAEB` / `#FEDF89` |
+| Bad text / soft / line | `bad` / `bad-soft` / `bad-line` | `#B42318` / `#FEF3F2` / `#FECDCA` |
+| Neutral wash (disabled, tracks, scrollbar) | `wash` | `#F2F4F7` |
 
-### Primary
-- **Phosphor Signal Green** (#2EFF7B): the GO ink. Fills the solid GO/DISPATCH/TRANSMIT plates (with void text), underlines the active station tab with its notch diamond, inks RECOVERED state readouts and recovered rupee figures, lights the T+ mission elapsed and STATUS lamps, and owns browser chrome — selection background, caret, focus ring, scrollbar hover, range accent. Its rarity is the point: green means the range says GO.
+The ink ramp carries all hierarchy: `ink` for values and titles, `ink-2` for labels and body, `ink-3` for captions/subtitles, `ink-4` only for placeholders, disabled, loading em-dashes, and the baseline bar fill. Chat message area sits on `bg-page` inside the white card; table headers use `bg-page`.
 
-### Secondary
-- **Countdown Amber** (#FFB300): the hold ink. Holds and counts in progress (T-10s→T-00s countdown strip, HOLD button state, ACQUIRING SIGNAL), the P2P commitment lock, RBI-window-closed state, uplink (customer) transmissions, and the TCO orbiter's ascending node. Amber never means failure — it means wait, locked, or queued.
+**WCAG discipline:** measured body text ≥ 4.5:1 (light theme, `color-scheme: light`), tuned for projectors and laptops in a short judge session.
 
-### Tertiary
-- **Range-Stop Red** (#FF4D4D): the abort ink. STOPPED_GUARDRAIL (RANGE STOP) and FAILED states, DEGRADED issuer cards with their glow, LOSS-OF-SIGNAL and DISPATCH-REJECTED states, and guardrail-failure readouts (HOLD). In this world red is often a success being celebrated — a range-safety stop that correctly fired.
+## 3. Typography
 
-### Neutral
-- **Console Text** (#CFE4F2): primary ink for body copy, table figures, and the neutral IN_PROGRESS / AT_RISK state chips.
-- **Secondary Slate** (#7C93A6): secondary copy — subtitles, labels, table interventions, baseline trace, transmission captions.
-- **Microtext Slate** (#6A8296): the floor ink for 9–10px uppercase stamps, placeholder text, readout codes, and the footer. The dimmest ink permitted anywhere (see The Faint-Floor Rule).
-- **Uplink Parchment** (#F5E9C8): body text inside customer uplink transmission blocks — a warm tint that keeps human-sent messages visually distinct from machine downlinks.
-- **Launch Void** (#05080F): the page background and the recessed level — countdown strip and log-expand interiors dim toward it.
-- **Instrument Panel** (#0A101C): every major panel plate and the graticule's base; also header, footer, and scrollbar track.
-- **Raised Control Plate** (#0D1524): controls and inset cards — inputs, table headers, manifest rows, decision records, comms target cards.
-- **Graticule Hairline** (#12202F): row dividers inside the mission log table.
-- **Panel Edge Steel** (#1C3245): every border, panel divider, and divide line in the system.
+Two self-hosted families, latin-subset woff2 in `/public/fonts`, `font-display: swap`, no CDN.
 
-Reserved, currently unused: `--color-signal-dim` (#1E7A44), `--color-amber-dim` (#8F6300), `--color-abort-dim` (#8F2626) are declared in the theme but appear in no component. They are reserved dim variants, not part of the working system.
+- **IBM Plex Sans** — 400/500/600/700 — the UI voice (body default 14px, antialiased).
+- **IBM Plex Mono** — 400/500/600 — every measured value, via the `.numeric` class (mono + `tabular-nums` + `-0.01em` tracking). Payload textareas are mono at 12.5px.
 
-### Named Rules
-**The One-Ink-Per-State Rule.** Every recovery state owns exactly one ink, mapped once in `STATE_INKS` (telemetry.tsx) and never hand-picked: RECOVERED → signal green, P2P_SCHEDULED → amber (labeled P2P LOCKED), STOPPED_GUARDRAIL → abort red (labeled RANGE STOP), FAILED → abort red, IN_PROGRESS and AT_RISK → neutral Console Text on faint borders. Never mix inks for a state, never invent a second tone.
+Size ramp actually used (Tailwind arbitrary values, no type scale):
 
-**The Faint-Floor Rule.** Microtext Slate (#6A8296) is the dimmest ink that may ship on any surface: measured 5.0:1 on void, 4.75:1 on panel, 4.56:1 on raise against the 4.5:1 small-text floor. Secondary copy uses #7C93A6; nothing darker is ever text. Known open item from the review: idle chip borders at 60% faint alpha sit ≈2.45:1, below the 3:1 non-text floor — do not copy that alpha pattern into new components blindly.
+- 10.5px — chat timestamps
+- 11.5px — bank Healthy/Struggling pills, "Example scenario" badge
+- 12px — captions, StatusBadge, table headers, footnotes
+- 12.5px — sub-captions, quick replies, promise tracker lines
+- 13px — body text, table cells, error copy
+- 13.5px — panel-subtitles adjacent labels, chat bubbles, tab labels
+- 14px — buttons, bank names
+- 15px — `PanelHeader` titles
+- 16px — webhook outcome/recovered cells
+- 17px — product name, comparison stat cells
+- 26px — bank uptime numerals
+- 28px — landing stat numerals
 
-## Typography
+Large numerals get `tracking-tight` + `font-semibold` + `leading-none`; body copy uses `leading-relaxed` with `max-w-[72ch]`-style caps in subtitles.
 
-**Display Font:** IBM Plex Mono (ui-monospace, Cascadia Mono, Consolas fallbacks) — self-hosted latin woff2
-**Body Font:** IBM Plex Sans (-apple-system, Segoe UI, Roboto fallbacks) — self-hosted latin woff2
-**Label/Mono Font:** IBM Plex Mono (same stack as Display)
+## 4. Layout
 
-**Character:** Two voices, strictly divided. The mono voice is the range's instrumentation — measured, stamped, unemotional. The sans voice is the human at the console — explanatory, plain, warm. The pairing is the world's clearest signal: if a string could be read aloud by an instrument, it is mono; if a human would say it to another human, it is sans.
+- **1200px max column** (`max-w-[1200px] mx-auto px-4 sm:px-6`), vertical rhythm via `py-6` main + `space-y-6` section gaps.
+- **Header** (sticky, `z-50`, white, hairline bottom): 28px LogoMark (32×32 viewBox, `rx=8` accent square + white bolt) → name "Razor**Revive**" 17px bold tracking-tight with "Revive" in accent → tagline right ("AI auto-responder that recovers failed payments — safely, within RBI rules") → 5 tabs (Simulation, AI Agent, Bank Health, Audit Ledger, Webhooks), each icon + 13.5px label, active = 2px `border-accent` underline with `text-accent-strong` + `bg-accent-soft/60`, inactive = transparent border, `hover:bg-wash`. `aria-current="page"` on the active tab.
+- **Panel anatomy** — `PanelHeader` (px-5 pt-4 pb-3): 15px semibold title, optional 13px `ink-3` subtitle (`max-w-[72ch]`), optional right slot (`shrink-0`) for badge/buttons.
+- **Grid ladders:** stats `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4` with `divide-x` hairlines; bank cards `1 / sm:2 / xl:3` (`gap-3`); paired panels `1 / lg:2` (`gap-6`); chat view `lg:grid-cols-3` with chat spanning 2 (`h-[640px]`); decision records `md:grid-cols-3`.
+- **Footer:** hairline top, white, 12px `ink-3` — attribution left ("RazorRevive · Razorpay Buildathon 2026 submission"), positioning right.
 
-### Hierarchy
-- **Display** (Mono 400, 26px stepping to 30px at sm, line-height 1, tracking −0.025em, tabular figures): the big measurements — vehicle-status readouts (at-risk, recovered, lift, ROI) and issuer uptime percentages. Phosphor ink when the value is a live measurement; Console Text when neutral.
-- **Headline** (Sans 700, 17px, line-height 1, tracking tight): the RAZORREVIVE callsign, with REVIVE in signal green. The only bold sans at this scale.
-- **Title** (Sans 600, 15px, line-height 1.375): every StationHeader console title.
-- **Body** (Sans 400, 12px, line-height 1.625): explanatory copy, subtitles (capped ~72ch), transmission message text, profile step bodies.
-- **Label** (Mono 400–500, 9–11px, uppercase, 0.14–0.25em tracking): the world's most abundant voice — station codes, readout captions, stamps, table headers, filter controls, footer. Buttons are labels enlarged: mono 12–14px semibold at 0.12em tracking, uppercase.
+## 5. Elevation & Depth
 
-### Named Rules
-**The Two Voices Rule.** Every measured value, timestamp, code, status, price, and machine utterance renders in IBM Plex Mono with tabular figures (the `.numeric` law: mono, `tabular-nums`, −0.01em tracking). Every sentence written for a human renders in IBM Plex Sans. No string switches voices.
+- **One shadow token:** `shadow-card` = `0 1px 2px rgba(16,24,40,0.04)` on white cards. No layered shadows, no glows (the only glow is the 3px accent focus halo on `.field`, a state, not elevation).
+- **One authored motion:** the `arrive` keyframe — 0.3s ease-out, opacity 0→1, 4px rise — applied when results land (expanded decision records, promise tracker, webhook verdicts, error notices). Everything else is `transition-colors`, bar fills (`duration-700`), or a spinner.
+- Depth otherwise comes from hairlines (`border-line`) and tone, never from shadow stacking.
 
-## Layout
+## 6. Shapes
 
-A single-page range, tab-based with no URL routing. A sticky command bar (58px, panel at 95% opacity with backdrop blur) carries the TCO mark, callsign, and — at lg and up — flight telemetry: IST clock, MISSION ELAPSED T+, CONTACT POLICY (RBI window open/closed), DIAGNOSTICIAN status, separated by 1px edge dividers. Below it, the five-station tab rail; below that, the Vehicle Status Board stays visible on every station, followed by the active station's console. The mission epoch persists per-browser via localStorage (`rrv-mission-epoch`) so T+ survives reloads.
+- **8px** — controls: `.field` inputs/selects/textareas, buttons (`rounded-lg`), chips, stat cells, inner detail boxes.
+- **12px** — cards (`rounded-xl`) and bank cards.
+- **16px** — chat bubbles (`rounded-2xl`), with one 4px directional corner (`rounded-tr-sm` user / `rounded-tl-sm` assistant) pointing at the avatar.
+- **Full-round** — status pills (`rounded-full`), quick replies, webhook sample chips, progress bars, avatars.
+- **Dashed hairlines** (`border-dashed border-line-strong`) — reserved for loading/empty/"not yet" states; solid bad-tint borders mark errors.
 
-Content lives in a 1440px max-width column with 16px gutters (20px from sm up). Sibling panels stack at a 20px rhythm. Readout walls and economics strips divide with 1px hairlines rather than gaps — divide-based grids on edge/grid colors — while card walls (issuer radar) use 3px gaps. The graticule itself is a 28px cell.
+## 7. Components
 
-**The Station Chrome Rule.** Every console panel opens with the same station header before any content: a signal-green mono code (10px, 0.25em, uppercase), a Sans title, one dim human subtitle (~72ch), and an optional right-hand readout slot. No panel invents its own header anatomy.
+- **Buttons.** Primary: `bg-accent text-white hover:bg-accent-strong active:translate-y-px` (Run simulation, Send, Send webhook). Running/disabled: `bg-wash text-ink-3` + `cursor-wait`/`cursor-not-allowed` with spinner. Ghost: `border-line-strong text-ink-2 hover:bg-wash`; link-flavored ghosts pick up `hover:text-accent` (Export CSV, Copy).
+- **Chips.** `aria-pressed` toggle buttons. Selected: `border-accent text-accent-strong bg-accent-soft`; unselected: `border-line-strong text-ink-2 bg-white hover:bg-wash`. Batch-size chips add `.numeric`; webhook samples and quick replies use `rounded-full`.
+- **StatusBadge** (`telemetry.tsx`): full-round pill, icon (CheckCircle2/Clock3/MinusCircle/Loader) + plain-English label, all three tone classes from `STATUS_TONES`.
+- **ComplianceBadge**: inline `Passed` (CheckCircle2, `text-ok`) / `Blocked` (ShieldAlert, `text-bad`) — no pill.
+- **Chat**: Bot/User avatars (28px `rounded-full`; assistant `bg-accent text-white`, user `bg-line text-ink-2`); user bubbles accent blue, assistant white with hairline; timestamps 10.5px mono; "Priya is typing…" pulse; scenario selector cards; promise-to-pay tracker in warn tints ("Follow-up paused · reminder scheduled").
+- **Bank cards**: Healthy (white, ok pill `border-ok-line bg-ok-soft text-ok`) vs Struggling (`bg-bad-soft border-bad-line`, white bad pill); 26px uptime numeral, full-round bar, peak-congestion footer.
+- **Audit table**: filter bar (search `.field` + two selects + record count), hairline-divided rows, expandable rows via chevron (`aria-expanded`, expanded row `bg-accent-soft/60`, detail row on `bg-page` with `.arrive`) opening a 3-cell decision record (AI diagnosis / safety checks / settlement).
+- **Fields**: `.field` class — white, `line-strong` border, 8px radius, accent border + 12% halo on focus, `ink-4` placeholders; selects use an inline SVG chevron, textareas are mono.
 
-Responsive ladder: single column on mobile (tab labels shorten to one word); at sm (640px) readouts go two-up and tabs show full labels; at lg (1024px) command telemetry appears, the comms console splits 1+2 columns, the sequencer goes content+launch-control, and paired panels go two-up; at xl (1280px) the status board is a four-readout wall and the radar a three-column wall.
+## 8. Browser Surfaces
 
-## Elevation & Depth
+- **Selection**: `::selection` accent bg / white text (plus `selection:bg-accent selection:text-white` on the root div).
+- **Caret**: `.caret-accent` on chat and search inputs.
+- **Focus-visible**: 2px solid `#0B72E9`, offset 2 — buttons, links, inputs, selects, textareas, `[tabindex]`.
+- **Range inputs**: `accent-color: #0B72E9`.
+- **Scrollbar** (WebKit): 8px, `wash` track, `line-strong` thumb with 2px `wash` border and 4px radius, `ink-4` on hover; `.no-scrollbar` hides it where a scroll affordance already exists (tab row, quick replies).
 
-No drop shadows exist anywhere in the system. Depth is conveyed three ways: tonal layering (void → panel → raise, with recessed interiors dimming toward void), the etched graticule (28px grid of 3% green lines with a 4% phosphor bloom at the panel crown), and phosphor glow — the only "shadow" vocabulary, and it is semantic, not structural: glow means the instrument is live in its ink.
+## 9. Do's and Don'ts
 
-### Shadow Vocabulary
-- **glow-signal** (`0 1px 0 0 rgba(46,255,123,0.25) inset, 0 0 20px -8px rgba(46,255,123,0.28)`): live signal-green plates — the RRV smart-sequencer profile.
-- **glow-amber** (`0 1px 0 0 rgba(255,179,0,0.25) inset, 0 0 20px -8px rgba(255,179,0,0.28)`): live amber plates.
-- **glow-abort** (`0 1px 0 0 rgba(255,77,77,0.25) inset, 0 0 20px -8px rgba(255,77,77,0.3)`): DEGRADED issuer cards.
-- **Trace glows** (`0 0 12px rgba(46,255,123,0.5)` / `0 0 10px rgba(255,77,77,0.5)`): fill bars inside trajectory and uptime traces.
-- **GO hover bloom** (`0 0 30px -8px rgba(46,255,123,0.6)`): the primary button's only hover treatment.
+**Do**
 
-### Named Rules
-**The Phosphor Ceiling Rule.** Phosphor glow (box and text) belongs to measured readouts, live status lamps, and active state plates only — never to body copy, never to headings, never as decoration. A glowing paragraph is a category error.
+1. Read every status label, tone, and icon from `STATUS_TONES` — it is the only authority.
+2. Use `.numeric` for every measured value, ID, and timestamp.
+3. Say backend failures in words ("Can't reach the backend… Start the backend on port 8000 and reload") — never zeros.
+4. Use dashed-border placeholders for loading/empty states and bad-tint boxes for errors, in every view.
+5. Use `.arrive` when results land; let bar fills transition at `duration-700`.
+6. Keep metrics honest: guardrail stops visible on the landing view, demo data labeled as demo data.
 
-## Shapes
+**Don't**
 
-The form language is the square instrument plate: 0px radius on every panel, button, chip, input, table, and transmission block. The only circles in the system are semantic instruments — the 7px StatusLamp (full round) and the TCO mark's orbiting node; the favicon's 8px corner radius is the one soft corner anywhere, and it ships at 16px, not in-app. Edges are 1px Panel Edge Steel; empty and acquiring states use dashed edge borders instead of color. One signature geometry: the active station tab carries a 7px square rotated 45° — a diamond notch centered under the 2px signal underline.
+1. Don't hand-pick hexes outside the `@theme` tokens.
+2. Don't use accent blue for non-interactive text — it means action, selection, or focus.
+3. Don't apply ok/warn/bad tints decoratively — they encode status only.
+4. Don't show zeros or fake numbers for dead telemetry.
+5. Don't round chat bubbles below `rounded-2xl` (16px) or forget the directional corner.
+6. Don't add shadows, glows, dark surfaces, or launch-range jargon — that world is dead.
 
-**The Square Plate Rule.** If a surface is square, it is an instrument; circles are reserved for lamps and orbiters. Never round a plate, chip, or control.
+## 10. Accessibility Notes
 
-## Components
-
-Every console reads its inks, formatters, and chrome from `components/telemetry.tsx` — INK constants, STATE_INKS, StationHeader, StatusLamp, StatusReadout, ComplianceReadout. New stations import; they never re-declare.
-
-### Buttons
-Instrument actuators — only the range's primary command gets a solid plate.
-- **Shape:** square (0px radius), 1px border.
-- **Primary (GO family — EXECUTE BATCH LAUNCH, DISPATCH WEBHOOK, TRANSMIT):** solid signal plate, void text, mono uppercase 12–14px semibold at 0.12em tracking, 16px vertical padding (10px for TRANSMIT); hover blooms the 30px green glow; active settles 1px downward.
-- **Hold/running state:** amber ghost — amber text on a 6% amber tint with a 60% amber border, wait cursor, spinning icon. (This spinner is the one transient looping icon in the codebase; do not multiply it.)
-- **Secondary/ghost (PLAY VOICE, EXPORT CSV, COPY, filter chips as buttons):** transparent with edge border and dim text; hover lifts to Console Text and brightens the border; EXPORT's hover additionally shifts to signal green.
-
-### Chips
-- **Style:** square, mono 10–12px, transparent idle with edge border and dim text; selected: signal border, signal text, 7% signal tint; `aria-pressed` throughout.
-- **Variants:** hardware-guard switches (batch size, verticals — verticals carry a StatusLamp, LLM engage), preset signal chips (Signal Ingest), test vectors (comms quick-transmissions). Known open item: idle borders at 60% faint alpha ≈2.45:1 against the 3:1 non-text floor.
-
-### Cards / Containers
-- **Corner Style:** 0px radius everywhere.
-- **Background:** the graticule plate for every major panel (panel base, 28px etch, crown bloom, 1px edge border); raised plates (#0D1524) for inset cards — decision records, manifest rows, comms targets, diagnosis blocks; recessed void tints for countdown strips and expanded log rows.
-- **Shadow Strategy:** none at rest; semantic phosphor glow only (see Elevation & Depth).
-- **Border:** 1px Panel Edge Steel; dashed for empty/acquiring states.
-- **Internal Padding:** 14–20px; the system's panel-gap rhythm is 20px.
-
-### Inputs / Fields
-- **Style:** raised plate background, 1px edge border, mono voice, Console Text; placeholders in Microtext Slate; the caret is signal green. Selects replace native chrome with a 10×6 dim chevron SVG and panel-colored options; the JSON editor is a mono textarea under the same law.
-- **Focus:** border turns signal green with a 1px signal ring and a 16px green bloom — and globally, every interactive element takes a 2px signal outline offset 2px on focus-visible.
-- **Error / Disabled:** no red inputs; malformed dispatches answer as DISPATCH REJECTED panels in abort ink. Disabled TRANSMIT drops to edge border with faint text on transparent.
-
-### Navigation
-- **Command bar:** sticky, panel at 95% + backdrop blur, 58px; 34px TCO mark (6s orbit), RAZOR (text ink) REVIVE (signal) at 17px bold, a bordered mono role chip, and a faint mono range line. Flight telemetry right, lg and up only, divided by 1px edge.
-- **Station tab rail:** carries the ambient 7s scanline sweep on its panel base. Square tabs: mono station code (9px, 0.15em) + 14px icon + label (full at sm+, one-word short below). Active: signal text, 2px signal bottom underline, 4% signal tint, and the rotated-45° notch diamond; idle: dim, hovering to Console Text.
-
-### Station Consoles (signature)
-- **StationHeader:** the shared chrome — code / title / subtitle / right slot (see The Station Chrome Rule).
-- **StatusLamp:** 7px round lamp; lit in its ink with an 8px ink-tinted halo, dark faint when off.
-- **StatusReadout:** one-ink state chip — mono 10px, state border at 50% ink alpha, 6–8% ink tint, icon, STATE_INKS label (RECOVERED / P2P LOCKED / RANGE STOP / FAILED / IN PROGRESS / AT RISK).
-- **ComplianceReadout:** PASS in signal / HOLD in abort with its icon — the compliance story at a glance.
-- **Vehicle readout:** mono code caption, ACQ/LOCK lamp pair, the Display-size value with phosphor ink when live, dim dashes while loading, arrival animation on land, sans explanation below.
-- **Transmission blocks:** squared message plates — downlink green (Priya) at 4% signal tint with 35% signal border, uplink amber (customer) at 6% amber tint with 40% amber border and Uplink Parchment body; each stamped with lamp, direction, and IST time.
-- **Countdown strip:** recessed void band; T-phase in phosphor amber, 1px progress fill in amber (300ms per phase), phase call in mono.
-
-## Do's and Don'ts
-
-### Do:
-- **Do** give every measured value the mono voice with tabular figures — the `.numeric` law (IBM Plex Mono, tabular-nums, −0.01em).
-- **Do** read state inks from `INK` / `STATE_INKS` in telemetry.tsx — one ink per state, never a hand-picked second green, amber, or red.
-- **Do** render dead telemetry as SIGNAL LOST / LOSS OF SIGNAL / DISPATCH REJECTED with a remediation line (e.g. VERIFY BACKEND ON :8000) — never zeros, never blank panels.
-- **Do** stamp any scenario panel not backed by the live ledger ILLUSTRATIVE PROFILE — as STA-03's Profile B does.
-- **Do** keep text inks at Microtext Slate (#6A8296) or brighter (measured 5.0:1 void / 4.75:1 panel / 4.56:1 raise); use #7C93A6 for secondary copy, #CFE4F2 for primary.
-- **Do** keep motion to the four loops — readout arrival (0.5s, cubic-bezier(0.16,1,0.3,1)), tab-rail sweep (7s), TCO orbit (6s), cursor blink (1.4s steps) — plus brief state fills (300ms countdown, 700ms bars).
-- **Do** ship fonts self-hosted from `/fonts` (latin woff2) — no CDN.
-- **Do** open every console with the StationHeader chrome and stamp it with a station code (STA-01…05 pattern).
-
-### Don't:
-- **Don't** round corners (0px radius) — circles belong to StatusLamps and the orbiter mark only.
-- **Don't** phosphor-glow body copy or headings; text-phosphor and glow utilities are for measured readouts and live plates only.
-- **Don't** invent metrics, benchmarks, or customers — illustrative scenarios get stamped, demo data stays labeled (footer: DEMO DATA).
-- **Don't** add new looping animations; the hold-spinner on the GO button is the one transient exception in code — don't copy it further.
-- **Don't** style failures as raw red error badges; failure gets mission language (LOSS OF SIGNAL, RANGE STOP, DISPATCH REJECTED) in its one ink with a remediation stamp.
-- **Don't** define colors outside the `@theme` block and INK constants; alpha tints derive only from the three state inks.
+- `aria-pressed` on all chip/toggle buttons; `aria-current="page"` on the active tab.
+- Chat log: `role="log"` + `aria-live="polite"` + `aria-label`.
+- Audit rows: `aria-expanded` + dynamic `aria-label` on the expand chevron; `sr-only` "Details" header cell keeps the action column legible to screen readers.
+- Every section/nav/select/input carries an `aria-label`.
+- Contrast measured at ≥ 4.5:1 for body text; focus-visible ring is 2px accent at 2px offset on all interactive elements.
+- The Hinglish voice degrades honestly: if `speechSynthesis` is missing, a warn-tinted note says the text chat still works.

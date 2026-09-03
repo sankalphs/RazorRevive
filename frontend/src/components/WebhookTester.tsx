@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Copy, Check, Radio } from 'lucide-react';
-import { fetchSampleWebhooks, sendWebhookEvent } from '../services/api';
-import { StationHeader, formatINR, ComplianceReadout, stateInk, StatusLamp, INK } from './telemetry';
+import { Send, Copy, Check, Inbox } from 'lucide-react';
+import { fetchSampleWebhooks, sendWebhookEvent, type AuditLogEntry, type WebhookPayload } from '../services/api';
+import { PanelHeader, formatINR, statusTone, DecisionRecord, humanizeIntervention, sampleLabel } from './telemetry';
 
 /* ============================================================
-   STA-05 · SIGNAL INGEST
-   Fire a raw Razorpay webhook at the range and watch the
-   full pipeline answer in one pass: diagnosis, guardrail
-   certification, intervention, settlement.
+   WEBHOOK TESTER — paste a Razorpay event, watch the engine
+   classify it, check it against safety rules, and act.
    ============================================================ */
 
 export const WebhookTester: React.FC = () => {
-  const [samples, setSamples] = useState<Record<string, any>>({});
+  const [samples, setSamples] = useState<Record<string, WebhookPayload>>({});
   const [selectedSampleKey, setSelectedSampleKey] = useState('payment_failed_gateway');
   const [jsonPayload, setJsonPayload] = useState('{\n  "event": "payment.failed"\n}');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<AuditLogEntry | null>(null);
+  const [error, setError] = useState<{ kind: 'json' | 'network'; message: string } | null>(null);
+  const [samplesFailed, setSamplesFailed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -27,7 +26,10 @@ export const WebhookTester: React.FC = () => {
           setJsonPayload(JSON.stringify(data['payment_failed_gateway'], null, 2));
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setSamplesFailed(true);
+      });
   }, []);
 
   const handleSelectSample = (key: string) => {
@@ -40,46 +42,65 @@ export const WebhookTester: React.FC = () => {
   };
 
   const handleDispatch = async () => {
+    let parsed: WebhookPayload;
     try {
-      setError(null);
-      setLoading(true);
-      const parsed = JSON.parse(jsonPayload);
+      parsed = JSON.parse(jsonPayload);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'The JSON is not valid';
+      setError({ kind: 'json', message });
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
       const res = await sendWebhookEvent(parsed);
       setResult(res);
-    } catch (err: any) {
-      setError(err?.message ?? 'Unknown dispatch error');
+    } catch {
+      setError({
+        kind: 'network',
+        message: 'The webhook service did not respond. Check that the backend is running on port 8000, then send again.',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const copyPayload = () => {
-    navigator.clipboard.writeText(jsonPayload);
+    if (!navigator.clipboard) {
+      setError({ kind: 'network', message: 'Copy is not available in this browser — select the text manually.' });
+      return;
+    }
+    navigator.clipboard.writeText(jsonPayload).catch(() => {
+      setError({ kind: 'network', message: 'Copy failed — select the text manually.' });
+    });
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-      {/* Inbound signal */}
-      <section className="panel-graticule flex flex-col" aria-label="Webhook dispatcher">
-        <StationHeader
-          code="STA-05 · INBOUND SIGNAL"
-          title="Razorpay Webhook Dispatcher"
-          subtitle="Fire a raw payment.failed or subscription.halted event at the range. The full pipeline — parse, diagnose, guardrail, intervene, audit — runs on dispatch."
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Input */}
+      <section className="bg-white border border-line rounded-xl shadow-card flex flex-col" aria-label="Send a webhook">
+        <PanelHeader
+          title="Send a webhook"
+          subtitle="Pick a sample Razorpay event — or paste your own — and send it through the full pipeline: diagnosis, safety checks, action."
           right={
             <button
               onClick={copyPayload}
-              className="numeric text-[10px] tracking-wider text-[#7C93A6] hover:text-[#2EFF7B] transition-colors flex items-center gap-1.5"
+              className="flex items-center gap-1.5 text-[12.5px] font-medium text-ink-2 hover:text-accent transition-colors px-2 py-1 rounded-md"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-[#2EFF7B]" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'COPIED' : 'COPY'}
+              {copied ? <Check className="w-3.5 h-3.5 text-ok" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied' : 'Copy'}
             </button>
           }
         />
 
-        <div className="px-4 sm:px-5 py-4 space-y-4 flex-1 flex flex-col">
-          {/* Preset signals */}
+        <div className="px-5 pb-5 space-y-4 flex-1 flex flex-col">
+          {samplesFailed ? (
+            <div className="border border-bad-line bg-bad-soft rounded-lg px-4 py-3 text-[13px] text-bad">
+              Sample events couldn't load. Start the backend on port 8000 and reload.
+            </div>
+          ) : (
           <div className="flex flex-wrap gap-2">
             {Object.keys(samples).map((key) => {
               const on = selectedSampleKey === key;
@@ -88,137 +109,119 @@ export const WebhookTester: React.FC = () => {
                   key={key}
                   onClick={() => handleSelectSample(key)}
                   aria-pressed={on}
-                  className={`numeric px-3 py-1.5 text-[10px] tracking-wider border transition-colors ${
+                  className={`px-3 py-1.5 text-[12.5px] rounded-full border transition-colors ${
                     on
-                      ? 'border-[#2EFF7B] text-[#2EFF7B] bg-[#2EFF7B]/[0.07]'
-                      : 'border-[#1C3245] text-[#7C93A6] hover:text-[#CFE4F2] hover:border-[#6A8296]'
+                      ? 'border-accent text-accent-strong bg-accent-soft'
+                      : 'border-line-strong text-ink-2 bg-white hover:bg-wash'
                   }`}
                 >
-                  {key.replace(/_/g, ' ')}
+                  {sampleLabel(key)}
                 </button>
               );
             })}
           </div>
+          )}
 
-          {/* Raw signal editor */}
           <textarea
             value={jsonPayload}
             onChange={(e) => setJsonPayload(e.target.value)}
             spellCheck={false}
             aria-label="Webhook JSON payload"
-            className="station-input flex-1 min-h-[300px] p-4 text-xs leading-relaxed caret-signal resize-none"
+            className="field flex-1 min-h-[300px] p-4 caret-accent resize-none rounded-lg"
           />
 
           <button
             onClick={handleDispatch}
             disabled={loading}
-            className={`w-full py-3.5 numeric text-sm font-semibold tracking-[0.12em] border transition-colors flex items-center justify-center gap-2.5 ${
+            className={`w-full py-3 text-[14px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
               loading
-                ? 'border-[#FFB300]/60 text-[#FFB300] bg-[#FFB300]/[0.06] cursor-wait'
-                : 'border-[#2EFF7B] text-[#05080F] bg-[#2EFF7B] hover:shadow-[0_0_30px_-8px_rgba(46,255,123,0.6)] active:translate-y-px'
+                ? 'bg-wash text-ink-3 cursor-wait'
+                : 'bg-accent text-white hover:bg-accent-strong active:translate-y-px'
             }`}
           >
             {loading ? (
               <>
-                <StatusLamp on ink={INK.amber} />
-                ACQUIRING SIGNAL…
+                <span className="w-4 h-4 rounded-full border-2 border-ink-4 border-t-transparent animate-spin" />
+                Processing…
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                DISPATCH WEBHOOK
+                Send webhook
               </>
             )}
           </button>
+          <p className="text-[12px] text-ink-3 text-center">
+            The first response can take a few seconds while the AI diagnostician reasons.
+          </p>
         </div>
       </section>
 
-      {/* Decision record */}
-      <section className="panel-graticule flex flex-col" aria-label="Autonomous agent decision">
-        <StationHeader
-          code="DECISION RECORD"
-          title="Autonomous Agent Decision"
-          subtitle="Immediate classification, guardrail certification, and intervention dispatched on receipt."
+      {/* Result */}
+      <section className="bg-white border border-line rounded-xl shadow-card flex flex-col" aria-label="Engine decision">
+        <PanelHeader
+          title="What the engine decided"
+          subtitle="The classification, safety verdict, and action taken on receipt."
         />
-        <div className="px-4 sm:px-5 py-4 flex-1">
+        <div className="px-5 pb-5 flex-1">
           {error ? (
-            <div className="h-full border border-[#FF4D4D]/50 bg-[#FF4D4D]/[0.05] px-4 py-6 text-center">
-              <div className="numeric text-[11px] text-[#FF4D4D] tracking-wider">DISPATCH REJECTED · SIGNAL MALFORMED</div>
-              <p className="text-[11px] text-[#7C93A6] mt-2">{error}</p>
-              <p className="text-[10px] text-[#6A8296] mt-1">Fix the JSON on the left and re-dispatch.</p>
+            <div className="h-full border border-bad-line bg-bad-soft rounded-lg px-4 py-6 text-center">
+              <div className="text-[13.5px] font-semibold text-bad">
+                {error.kind === 'json' ? 'The JSON is not valid' : "Couldn't process that event"}
+              </div>
+              <p className="text-[13px] text-ink-3 mt-2">{error.message}</p>
+              {error.kind === 'json' && (
+                <p className="text-[12.5px] text-ink-3 mt-1">Fix the JSON on the left and send again.</p>
+              )}
             </div>
           ) : loading ? (
-            <div className="h-full min-h-[300px] border border-[#FFB300]/40 bg-[#FFB300]/[0.04] flex flex-col items-center justify-center text-center px-6">
-              <StatusLamp on ink={INK.amber} />
-              <div className="numeric text-[11px] text-[#FFB300] mt-3 tracking-wider flex items-center gap-2">
-                ACQUIRING SIGNAL
-                <span className="station-cursor">_</span>
-              </div>
-              <p className="text-[11px] text-[#7C93A6] mt-1.5 leading-relaxed">
-                Diagnosing, certifying guardrails, dispatching intervention — first response can take several
-                seconds while the LLM diagnostician reasons.
+            <div className="h-full min-h-[300px] border border-line bg-page rounded-lg flex flex-col items-center justify-center text-center px-6">
+              <span className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+              <div className="text-[13.5px] font-medium text-ink mt-3">Processing the event…</div>
+              <p className="text-[12.5px] text-ink-3 mt-1.5 leading-relaxed">
+                Diagnosing the failure, checking safety rules, choosing an action.
               </p>
             </div>
           ) : result ? (
-            <div className="space-y-4 readout-arrival">
-              {/* Final state */}
-              <div className="grid grid-cols-2 divide-x divide-[#1C3245] border border-[#1C3245] bg-[#05080F]/50">
-                <div className="px-4 py-3.5">
-                  <div className="numeric text-[9px] tracking-[0.18em] text-[#6A8296]">FINAL STATE</div>
-                  <div className={`numeric text-lg mt-2 tracking-tight ${stateInk(result.final_status).phosphor || 'text-[#CFE4F2]'}`}>
-                    {stateInk(result.final_status).label}
+            <div className="arrive space-y-4">
+              <div className="grid grid-cols-2 gap-px bg-line rounded-lg overflow-hidden border border-line">
+                <div className="px-4 py-3.5 bg-white">
+                  <div className="text-[12px] text-ink-3">Outcome</div>
+                  <div className={`text-[16px] font-semibold mt-1 ${statusTone(result.final_status).text}`}>
+                    {statusTone(result.final_status).label}
                   </div>
                 </div>
-                <div className="px-4 py-3.5 text-right">
-                  <div className="numeric text-[9px] tracking-[0.18em] text-[#6A8296]">RECOVERED</div>
-                  <div className="numeric text-lg mt-2 tracking-tight text-phosphor">
+                <div className="px-4 py-3.5 bg-white text-right">
+                  <div className="text-[12px] text-ink-3">Recovered</div>
+                  <div className="text-[16px] font-semibold mt-1 text-ok numeric">
                     {formatINR(result.amount_recovered)}
                   </div>
                 </div>
               </div>
 
-              {/* Diagnosis */}
-              <div className="border border-[#1C3245] bg-[#0D1524]/60 px-4 py-3.5">
-                <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">
-                  ROOT-CAUSE DIAGNOSTIC · {result.diagnosis.category}
-                </div>
-                <div className="text-[11px] text-[#CFE4F2]">{result.diagnosis.root_cause}</div>
-                <p className="numeric text-[10px] text-[#6A8296] leading-relaxed mt-2.5 border-t border-[#1C3245] pt-2.5">
-                  {result.diagnosis.ai_reasoning}
-                </p>
-              </div>
+              <DecisionRecord record={result} />
 
-              {/* Guardrail certification */}
-              <div className="border border-[#1C3245] bg-[#0D1524]/60 px-4 py-3.5">
-                <div className="numeric text-[9px] tracking-[0.2em] text-[#7C93A6] mb-2">GUARDRAIL CERTIFICATION</div>
-                <div className="flex items-center gap-2.5 text-[11px]">
-                  <ComplianceReadout ok={result.compliance.is_compliant} />
-                  <span className="text-[#7C93A6]">{result.compliance.reason}</span>
-                </div>
-              </div>
-
-              {/* Raw references */}
-              <div className="border border-[#1C3245] bg-[#05080F]/60 px-4 py-3 numeric text-[10px] space-y-1.5">
+              <div className="border border-line rounded-lg px-4 py-3 bg-page text-[12.5px] space-y-1.5">
                 <div className="flex justify-between gap-4">
-                  <span className="text-[#6A8296] tracking-wider">TXN</span>
-                  <span className="text-[#2EFF7B]">{result.transaction_id}</span>
+                  <span className="text-ink-3">Transaction</span>
+                  <span className="text-ink font-medium numeric">{result.transaction_id}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-[#6A8296] tracking-wider">INTERVENTION</span>
-                  <span className="text-[#CFE4F2]">{result.intervention.replace(/_/g, ' ')}</span>
+                  <span className="text-ink-3">Action taken</span>
+                  <span className="text-ink">{humanizeIntervention(result.intervention)}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-[#6A8296] tracking-wider">SETTLEMENT REF</span>
-                  <span className="text-[#CFE4F2]">{result.settlement_ref || 'NONE · DEFERRED OR HARD STOP'}</span>
+                  <span className="text-ink-3">Settlement ref</span>
+                  <span className="text-ink numeric">{result.settlement_ref || 'None — deferred or stopped'}</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-full min-h-[300px] border border-dashed border-[#1C3245] flex flex-col items-center justify-center text-center px-6">
-              <Radio className="w-7 h-7 text-[#6A8296]" />
-              <div className="numeric text-[11px] text-[#7C93A6] mt-3 tracking-wider">CHANNEL QUIET</div>
-              <p className="text-[11px] text-[#6A8296] mt-1.5 leading-relaxed">
-                Select a preset signal on the left and dispatch it to watch the pipeline answer.
+            <div className="h-full min-h-[300px] border border-dashed border-line-strong rounded-lg flex flex-col items-center justify-center text-center px-6">
+              <Inbox className="w-7 h-7 text-ink-4" />
+              <div className="text-[13.5px] font-medium text-ink-3 mt-3">Nothing processed yet</div>
+              <p className="text-[12.5px] text-ink-3 mt-1.5 leading-relaxed">
+                Pick a sample event on the left and send it to see the engine's decision.
               </p>
             </div>
           )}

@@ -12,8 +12,9 @@ from ..models.schemas import (
     FailureCategory
 )
 from .diagnostics import diagnose_transaction_ai
-from .policy_guardrails import evaluate_compliance_and_guardrails
+from .policy_guardrails import evaluate_compliance_and_guardrails, guardrail_stop_details
 from .audit_logger import audit_logger
+from ..interventions.base import INTERVENTION_BASE_COSTS
 from ..interventions.mandate_sequencer import MandateRetrySequencer
 from ..interventions.hinglish_agent import HinglishRecoveryAgent
 from ..interventions.checkout_rescuer import CheckoutDropOffRescuer
@@ -41,50 +42,9 @@ class RecoveryOrchestrator:
         compliance = evaluate_compliance_and_guardrails(txn, diagnosis.category, custom_time=custom_time)
 
         # Step 3: Handle Non-Compliant / Stopping Rules
+        # Single owner of the stop mapping lives in the Guardrail module.
         if not compliance.is_compliant:
-            cost = 0.0
-            recovered = 0.0
-            settlement_ref = None
-            
-            if not compliance.not_hard_declined:
-                final_status = RecoveryStatus.STOPPED_GUARDRAIL
-                action_details = {
-                    "rule": "HARD_STOP_FRAUD_OR_INVALID_INSTRUMENT",
-                    "reason": compliance.reason,
-                    "action_taken": "Zero retries attempted. Logged to merchant compliance ledger."
-                }
-            elif not compliance.dnd_clear:
-                final_status = RecoveryStatus.STOPPED_GUARDRAIL
-                action_details = {
-                    "rule": "DND_REGISTRY_RESPECTED",
-                    "reason": compliance.reason,
-                    "action_taken": "Outreach suppressed per customer opt-out."
-                }
-            elif not compliance.dispute_clear:
-                final_status = RecoveryStatus.STOPPED_GUARDRAIL
-                action_details = {
-                    "rule": "CUSTOMER_HARDSHIP_OR_DISPUTE_PAUSE",
-                    "reason": compliance.reason,
-                    "action_taken": "Automated dunning halted; escalated to human concierge."
-                }
-            elif not compliance.within_touch_limit:
-                final_status = RecoveryStatus.STOPPED_GUARDRAIL
-                action_details = {
-                    "rule": "MAX_TOUCHPOINT_CEILING_REACHED",
-                    "reason": compliance.reason,
-                    "action_taken": "Outreach capped to prevent customer fatigue."
-                }
-            elif not compliance.rbi_hours_ok:
-                final_status = RecoveryStatus.IN_PROGRESS
-                action_details = {
-                    "rule": "RBI_CONTACT_HOURS_DEFERRED",
-                    "reason": compliance.reason,
-                    "deferred_until": compliance.deferred_until_ist,
-                    "action_taken": f"Action queued for dispatch at {compliance.deferred_until_ist}."
-                }
-            else:
-                final_status = RecoveryStatus.STOPPED_GUARDRAIL
-                action_details = {"rule": "GENERIC_GUARDRAIL_STOP", "reason": compliance.reason}
+            final_status, action_details = guardrail_stop_details(compliance)
 
             entry = AuditLogEntry(
                 id=audit_id,
@@ -118,7 +78,7 @@ class RecoveryOrchestrator:
             final_status = status
             action_details = details
             amount_recovered = recovered
-            cost_incurred = 1.25
+            cost_incurred = float(details.get("cost_incurred", INTERVENTION_BASE_COSTS["SMART_MANDATE_RETRY"]))
             settlement_ref = details.get("settlement_ref")
 
         elif chosen_intervention in [InterventionType.HINGLISH_VOICE_P2P, InterventionType.WHATSAPP_MAGIC_LINK]:
@@ -126,7 +86,7 @@ class RecoveryOrchestrator:
             final_status = status
             action_details = details
             amount_recovered = recovered
-            cost_incurred = 1.80
+            cost_incurred = float(details.get("cost_incurred", INTERVENTION_BASE_COSTS["HINGLISH_VOICE_P2P"]))
             settlement_ref = details.get("settlement_ref")
 
         elif chosen_intervention == InterventionType.CHECKOUT_DYNAMIC_OFFER:
@@ -134,7 +94,11 @@ class RecoveryOrchestrator:
             final_status = status
             action_details = details
             amount_recovered = recovered
-            cost_incurred = 1.50 + details.get("discount_funded", 0.0)
+            # Cost lives with the intervention (base fee + funded discount).
+            cost_incurred = float(details.get(
+                "cost_incurred",
+                INTERVENTION_BASE_COSTS["CHECKOUT_DYNAMIC_OFFER"] + details.get("discount_funded", 0.0),
+            ))
             settlement_ref = details.get("settlement_ref")
 
         elif chosen_intervention == InterventionType.B2B_COMPLIANT_DUNNING:
@@ -142,7 +106,7 @@ class RecoveryOrchestrator:
             final_status = status
             action_details = details
             amount_recovered = recovered
-            cost_incurred = 2.50
+            cost_incurred = float(details.get("cost_incurred", INTERVENTION_BASE_COSTS["B2B_COMPLIANT_DUNNING"]))
             settlement_ref = details.get("settlement_ref")
 
         else:

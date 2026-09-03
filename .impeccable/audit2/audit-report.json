@@ -1,0 +1,116 @@
+{
+  "console": [],
+  "requests": [],
+  "a11y": [
+    {
+      "tab": "simulation",
+      "unnamed": [],
+      "badHeadings": [],
+      "smallTargets": [],
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "RazorRevive"
+        },
+        {
+          "tag": "H2",
+          "text": "Run a recovery simulation"
+        },
+        {
+          "tag": "H2",
+          "text": "AI vs basic retries"
+        },
+        {
+          "tag": "H2",
+          "text": "Actions the engine took"
+        }
+      ]
+    },
+    {
+      "tab": "agent",
+      "unnamed": [],
+      "badHeadings": [],
+      "smallTargets": [],
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "RazorRevive"
+        },
+        {
+          "tag": "H2",
+          "text": "Try a scenario"
+        },
+        {
+          "tag": "H2",
+          "text": "Promise to pay"
+        },
+        {
+          "tag": "H2",
+          "text": "Priya · cult.fit"
+        }
+      ]
+    },
+    {
+      "tab": "bankhealth",
+      "unnamed": [],
+      "badHeadings": [],
+      "smallTargets": [],
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "RazorRevive"
+        },
+        {
+          "tag": "H2",
+          "text": "Bank gateway health"
+        },
+        {
+          "tag": "H2",
+          "text": "Fixed-schedule retries"
+        },
+        {
+          "tag": "H2",
+          "text": "Health-aware retries"
+        }
+      ]
+    },
+    {
+      "tab": "ledger",
+      "unnamed": [],
+      "badHeadings": [],
+      "smallTargets": [],
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "RazorRevive"
+        },
+        {
+          "tag": "H2",
+          "text": "Audit ledger"
+        }
+      ]
+    },
+    {
+      "tab": "webhooks",
+      "unnamed": [],
+      "badHeadings": [],
+      "smallTargets": [],
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "RazorRevive"
+        },
+        {
+          "tag": "H2",
+          "text": "Send a webhook"
+        },
+        {
+          "tag": "H2",
+          "text": "What the engine decided"
+        }
+      ]
+    }
+  ],
+  "overflow": [],
+  "misc": []
+}

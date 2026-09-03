@@ -110,14 +110,54 @@ def fallback_diagnose(txn: AtRiskTransaction) -> DiagnosisResult:
             recommended_retry_delay_hours=4
         )
 
-async def diagnose_transaction_ai(txn: AtRiskTransaction, use_llm: bool = True) -> DiagnosisResult:
-    """
-    Uses the configured LLM (MiniMaxAI/MiniMax-M3) to perform deep root-cause diagnosis.
-    Falls back gracefully to deterministic heuristics on timeout or API error.
-    """
-    if not use_llm or not GMI_API_KEY:
-        return fallback_diagnose(txn)
+def _canonical_mapping_prose() -> str:
+    """Renders the single rule table as prompt prose.
 
+    The LLM prompt never hand-lists error codes again — it is generated
+    from DETERMINISTIC_RULES, so the table is the one truth.
+    """
+    grouped: Dict[str, list] = {}
+    for code, (cat, action, _delay) in DETERMINISTIC_RULES.items():
+        grouped.setdefault(f"{cat.value} + {action.value}", []).append(code)
+    lines = []
+    for verdict, codes in sorted(grouped.items()):
+        lines.append(f"- {', '.join(sorted(codes))} -> {verdict}")
+    return "\n".join(lines)
+
+
+def parse_llm_diagnosis_json(raw_text: str, txn: AtRiskTransaction) -> DiagnosisResult:
+    """Parses LLM JSON output into a DiagnosisResult.
+
+    Pure and directly testable: markdown-fence stripping, JSON decode,
+    and enum coercion all live here instead of inline in the network caller.
+    Raises ValueError on undecodable content so callers can fall back.
+    """
+    text = raw_text.strip()
+    # Clean any markdown code blocks
+    if text.startswith("```"):
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1]
+            if text.strip().startswith("json"):
+                text = text.strip()[4:]
+    parsed = json.loads(text.strip())
+    return DiagnosisResult(
+        category=FailureCategory(parsed.get("category", "TRANSIENT_TECHNICAL")),
+        root_cause=parsed.get("root_cause", txn.razorpay_error_desc),
+        confidence=float(parsed.get("confidence", 0.92)),
+        recommended_action=InterventionType(parsed.get("recommended_action", "SMART_MANDATE_RETRY")),
+        ai_reasoning=parsed.get("ai_reasoning", "LLM agentic root-cause diagnosis completed."),
+        recommended_retry_delay_hours=int(parsed.get("recommended_retry_delay_hours", 2))
+    )
+
+
+def deterministic_adapter(txn: AtRiskTransaction) -> DiagnosisResult:
+    """In-memory deterministic adapter: no network, safe for tests."""
+    return fallback_diagnose(txn)
+
+
+async def llm_adapter(txn: AtRiskTransaction) -> DiagnosisResult:
+    """LLM adapter: network call with graceful fallback to deterministic."""
     prompt = f"""You are RazorRevive AI, an expert fintech recovery diagnostician for Razorpay.
 Analyze this payment failure / revenue at risk event and output a JSON diagnosis:
 
@@ -138,12 +178,7 @@ Select exactly one Recommended Action:
 ["SMART_MANDATE_RETRY", "HINGLISH_VOICE_P2P", "WHATSAPP_MAGIC_LINK", "CHECKOUT_DYNAMIC_OFFER", "B2B_COMPLIANT_DUNNING", "HARD_STOP_NO_ACTION"]
 
 For known Razorpay error codes, use this canonical mapping unless the transaction data clearly contradicts it:
-- Gateway/switch/timeout codes (GATEWAY_ERROR, BANK_DEBIT_FAILED_TECHNICAL, NPCI_TIMEOUT) -> TRANSIENT_TECHNICAL + SMART_MANDATE_RETRY
-- INSUFFICIENT_FUNDS -> SOFT_FINANCIAL + HINGLISH_VOICE_P2P (empathetic conversation beats a blind retry on an empty account)
-- UPI_DAILY_LIMIT_EXCEEDED / MANDATE_AMOUNT_EXCEEDS_CAP -> SOFT_FINANCIAL + WHATSAPP_MAGIC_LINK
-- CARD_EXPIRED / ACCOUNT_CLOSED / FRAUD_DETECTED / STOLEN_CARD / revoked mandates -> HARD_PERMANENT + HARD_STOP_NO_ACTION (never retry)
-- Checkout drop-offs / cart abandonment on MAGIC_CHECKOUT -> BEHAVIORAL_DROPOFF + CHECKOUT_DYNAMIC_OFFER
-- B2B invoice overdue / approval delays -> COMMERCIAL_DISPUTE + B2B_COMPLIANT_DUNNING
+{_canonical_mapping_prose()}
 
 Respond strictly in valid JSON without markdown formatting:
 {{
@@ -173,26 +208,29 @@ Respond strictly in valid JSON without markdown formatting:
                     "temperature": 0.1
                 }
             )
-            
+
             if res.status_code == 200:
                 data = res.json()
                 raw_text = data["choices"][0]["message"]["content"].strip()
-                # Clean any markdown code blocks
-                if raw_text.startswith("```"):
-                    raw_text = raw_text.split("```")[1]
-                    if raw_text.startswith("json"):
-                        raw_text = raw_text[4:]
-                parsed = json.loads(raw_text.strip())
-                
-                return DiagnosisResult(
-                    category=FailureCategory(parsed.get("category", "TRANSIENT_TECHNICAL")),
-                    root_cause=parsed.get("root_cause", txn.razorpay_error_desc),
-                    confidence=float(parsed.get("confidence", 0.92)),
-                    recommended_action=InterventionType(parsed.get("recommended_action", "SMART_MANDATE_RETRY")),
-                    ai_reasoning=parsed.get("ai_reasoning", "LLM agentic root-cause diagnosis completed."),
-                    recommended_retry_delay_hours=int(parsed.get("recommended_retry_delay_hours", 2))
-                )
+                try:
+                    return parse_llm_diagnosis_json(raw_text, txn)
+                except Exception as e:
+                    logger.warning(f"LLM diagnosis parse failed ({e}), falling back to deterministic engine.")
     except Exception as e:
         logger.warning(f"LLM diagnosis failed or timed out ({e}), falling back to deterministic engine.")
-    
+
     return fallback_diagnose(txn)
+
+async def diagnose_transaction_ai(txn: AtRiskTransaction, use_llm: bool = True) -> DiagnosisResult:
+    """
+    Single Diagnosis interface: deterministic adapter in tests / fallback,
+    LLM adapter in prod. Two adapters justify the seam.
+    """
+    if not use_llm or not GMI_API_KEY:
+        return deterministic_adapter(txn)
+    return await llm_adapter(txn)
+
+
+# Single-interface alias: prefer `diagnose_transaction` in new code.
+async def diagnose_transaction(txn: AtRiskTransaction, use_llm: bool = True) -> DiagnosisResult:
+    return await diagnose_transaction_ai(txn, use_llm=use_llm)

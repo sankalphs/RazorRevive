@@ -1,9 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="8" fill="#05080F"/>
-  <ellipse cx="32" cy="34" rx="24" ry="15" fill="none" stroke="#2EFF7B" stroke-width="3" stroke-dasharray="151 70" stroke-linecap="round">
-    <animateTransform attributeName="transform" type="rotate" from="0 32 34" to="360 32 34" dur="6s" repeatCount="indefinite"/>
-  </ellipse>
-  <path d="M8 48 L50 14" stroke="#2EFF7B" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="46" cy="17" r="4" fill="#FFB300"/>
-  <circle cx="50" cy="14" r="2" fill="#05080F"/>
+  <rect width="64" height="64" rx="14" fill="#0B72E9"/>
+  <path d="M35 14 21 34h8.8L26.6 50 43 29h-9.2L35 14Z" fill="#FFFFFF"/>
 </svg>

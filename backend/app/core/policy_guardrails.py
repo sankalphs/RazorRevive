@@ -1,8 +1,8 @@
 import re
 from datetime import datetime, timezone, timedelta
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 from ..config import RBI_START_HOUR_IST, RBI_END_HOUR_IST, MAX_TOUCHPOINTS
-from ..models.schemas import AtRiskTransaction, FailureCategory, ComplianceCheck
+from ..models.schemas import AtRiskTransaction, FailureCategory, ComplianceCheck, RecoveryStatus
 
 # IST Timezone: UTC + 5:30
 IST_OFFSET = timezone(timedelta(hours=5, minutes=30))
@@ -82,6 +82,70 @@ def check_customer_hardship(text: str) -> bool:
     lower = text.lower()
     return any(re.search(p, lower) for p in HARDSHIP_PATTERNS)
 
+def is_touch_capped(attempts_made: int) -> bool:
+    """Single owner of the touch-ceiling comparison. All modules read this."""
+    return attempts_made >= MAX_TOUCHPOINTS
+
+
+def baseline_should_skip(txn: AtRiskTransaction) -> bool:
+    """Single owner of the naive-dunning stop view.
+
+    The baseline runner asks the Guardrail module which rows even a
+    careful engine would refuse to touch, instead of re-listing
+    hard-stop codes / DND / hardship / touch caps locally.
+    """
+    if txn.razorpay_error_code in HARD_STOP_ERROR_CODES:
+        return True
+    if txn.customer.is_dnd or txn.customer.is_hardship:
+        return True
+    if is_touch_capped(txn.attempts_made):
+        return True
+    return False
+
+
+def guardrail_stop_details(compliance: ComplianceCheck) -> Tuple[RecoveryStatus, Dict[str, Any]]:
+    """Single owner of the compliance -> stop mapping.
+
+    Priority is load-bearing and evaluated top-down:
+    hard-stop > DND > hardship/dispute > touch ceiling > RBI hours.
+    The Recovery module calls this instead of re-deriving rule strings.
+    """
+    if not compliance.not_hard_declined:
+        return RecoveryStatus.STOPPED_GUARDRAIL, {
+            "rule": "HARD_STOP_FRAUD_OR_INVALID_INSTRUMENT",
+            "reason": compliance.reason,
+            "action_taken": "Zero retries attempted. Logged to merchant compliance ledger.",
+        }
+    if not compliance.dnd_clear:
+        return RecoveryStatus.STOPPED_GUARDRAIL, {
+            "rule": "DND_REGISTRY_RESPECTED",
+            "reason": compliance.reason,
+            "action_taken": "Outreach suppressed per customer opt-out.",
+        }
+    if not compliance.dispute_clear:
+        return RecoveryStatus.STOPPED_GUARDRAIL, {
+            "rule": "CUSTOMER_HARDSHIP_OR_DISPUTE_PAUSE",
+            "reason": compliance.reason,
+            "action_taken": "Automated dunning halted; escalated to human concierge.",
+        }
+    if not compliance.within_touch_limit:
+        return RecoveryStatus.STOPPED_GUARDRAIL, {
+            "rule": "MAX_TOUCHPOINT_CEILING_REACHED",
+            "reason": compliance.reason,
+            "action_taken": "Outreach capped to prevent customer fatigue.",
+        }
+    if not compliance.rbi_hours_ok:
+        return RecoveryStatus.IN_PROGRESS, {
+            "rule": "RBI_CONTACT_HOURS_DEFERRED",
+            "reason": compliance.reason,
+            "deferred_until": compliance.deferred_until_ist,
+            "action_taken": f"Action queued for dispatch at {compliance.deferred_until_ist}.",
+        }
+    return RecoveryStatus.STOPPED_GUARDRAIL, {
+        "rule": "GENERIC_GUARDRAIL_STOP",
+        "reason": compliance.reason,
+    }
+
 def evaluate_compliance_and_guardrails(
     txn: AtRiskTransaction,
     category: FailureCategory,
@@ -132,7 +196,7 @@ def evaluate_compliance_and_guardrails(
         )
 
     # 4. Anti-Harassment Touchpoint Ceiling
-    if txn.attempts_made >= MAX_TOUCHPOINTS:
+    if is_touch_capped(txn.attempts_made):
         return ComplianceCheck(
             is_compliant=False,
             rbi_hours_ok=True,

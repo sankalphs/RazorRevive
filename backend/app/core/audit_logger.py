@@ -1,34 +1,43 @@
 import csv
 import io
+import threading
 from typing import List, Optional, Dict, Any
 from ..models.schemas import AuditLogEntry, RecoveryStatus, FailureCategory, InterventionType
 
 class AuditLogger:
     """
-    In-memory thread-safe chronological audit ledger for RazorRevive.
-    Tracks every event, AI diagnosis, compliance check, and final settlement.
+    Deep Audit Ledger module: one interface owns every stored row.
+
+    Ordering contract (documented once, here):
+    - reads (get_all / filter / all_entries) return newest-first;
+    - export_csv writes oldest-first chronological order for evidence.
+    All state changes hold an internal lock; callers never touch the rows.
     """
     def __init__(self):
         self._entries: List[AuditLogEntry] = []
+        self._lock = threading.Lock()
 
     def record(self, entry: AuditLogEntry) -> AuditLogEntry:
-        self._entries.append(entry)
+        with self._lock:
+            self._entries.append(entry)
         return entry
 
     def get_all(self, limit: int = 100, offset: int = 0) -> List[AuditLogEntry]:
-        # Return newest first
-        reversed_list = list(reversed(self._entries))
-        return reversed_list[offset : offset + limit]
+        # Newest-first snapshot under lock; delegates to the single filter path.
+        return self.filter(limit=limit, offset=offset)
 
     def all_entries(self) -> List[AuditLogEntry]:
         """Full ledger, newest first, for aggregate statistics."""
-        return list(reversed(self._entries))
+        with self._lock:
+            return list(reversed(self._entries))
 
     def count(self) -> int:
-        return len(self._entries)
+        with self._lock:
+            return len(self._entries)
 
     def clear(self):
-        self._entries.clear()
+        with self._lock:
+            self._entries.clear()
 
     def filter(
         self,
@@ -42,7 +51,10 @@ class AuditLogger:
         results = []
         search_lower = search.lower() if search else None
 
-        for entry in reversed(self._entries):
+        with self._lock:
+            snapshot = list(reversed(self._entries))
+
+        for entry in snapshot:
             if status and entry.final_status != status:
                 continue
             if intervention and entry.intervention != intervention:
@@ -60,7 +72,13 @@ class AuditLogger:
         return results[offset : offset + limit]
 
     def export_csv(self) -> str:
-        """Exports full audit trail as an RFC-4180 compliant CSV string."""
+        """Exports full audit trail as an RFC-4180 compliant CSV string.
+
+        Chronological (oldest-first) so the exported evidence reads in
+        event order, while paged reads stay newest-first.
+        """
+        with self._lock:
+            snapshot = list(self._entries)
         output = io.StringIO()
         writer = csv.writer(output)
         
@@ -83,7 +101,7 @@ class AuditLogger:
             "Settlement Reference"
         ])
 
-        for e in self._entries:
+        for e in snapshot:
             writer.writerow([
                 e.id,
                 e.transaction_id,

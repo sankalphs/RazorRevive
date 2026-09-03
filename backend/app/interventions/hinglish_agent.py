@@ -14,9 +14,27 @@ from ..models.schemas import (
     PromiseToPayRecord
 )
 from ..core.policy_guardrails import check_customer_opt_out, check_customer_hardship
+from .base import INTERVENTION_BASE_COSTS
 
-# In-memory registry for tracked Promise-to-Pay commitments
+# In-memory registry for tracked Promise-to-Pay commitments.
+# Access only via record_p2p_commitment / list_p2p_commitments / clear_p2p_registry.
 p2p_registry: Dict[str, PromiseToPayRecord] = {}
+
+
+def record_p2p_commitment(record: PromiseToPayRecord) -> PromiseToPayRecord:
+    """Single write path for Promise-to-Pay commitments."""
+    p2p_registry[record.id] = record
+    return record
+
+
+def list_p2p_commitments() -> List[PromiseToPayRecord]:
+    """Single read path for Promise-to-Pay commitments."""
+    return list(p2p_registry.values())
+
+
+def clear_p2p_registry() -> None:
+    """Test/reset hook behind the module seam."""
+    p2p_registry.clear()
 
 class HinglishRecoveryAgent:
     """
@@ -134,12 +152,18 @@ class HinglishRecoveryAgent:
         return "GENERAL_INQUIRY"
 
     @staticmethod
+    def build_voice_cue(reply: str) -> str:
+        """Single owner of the voice-playback text for a conversational turn."""
+        return reply
+
+    @staticmethod
     async def chat_turn(
         messages: List[ChatMessage],
         customer_name: str,
         merchant_name: str,
         amount: float,
-        failure_reason: str
+        failure_reason: str,
+        transaction_id: Optional[str] = None,
     ) -> ChatInteractionResponse:
         """
         Executes a live conversational turn with the Hinglish recovery agent.
@@ -189,7 +213,7 @@ class HinglishRecoveryAgent:
             p2p_id = f"p2p_{uuid.uuid4().hex[:8]}"
             record = PromiseToPayRecord(
                 id=p2p_id,
-                transaction_id=f"txn_{uuid.uuid4().hex[:8]}",
+                transaction_id=transaction_id or f"txn_{uuid.uuid4().hex[:8]}",
                 customer_name=customer_name,
                 customer_phone="+91-9876543210",
                 amount=amount,
@@ -200,13 +224,13 @@ class HinglishRecoveryAgent:
                 status="ACTIVE_PLEDGE",
                 followup_due=f"{date_str} {time_str}"
             )
-            p2p_registry[p2p_id] = record
+            record_p2p_commitment(record)
             p2p_data = record.model_dump()
-            
+
             reply = f"Dhanyawad {customer_name} ji! Humne note kar liya hai ki aap {date_str} ko lagbhag {time_str} pay karenge. Tab tak ke liye humne sabhi reminders pause kar diye hain. Hum aapko WhatsApp pe ek gentle reminder link bhejenge."
             return ChatInteractionResponse(
                 reply=reply,
-                audio_text_hinglish=reply,
+                audio_text_hinglish=HinglishRecoveryAgent.build_voice_cue(reply),
                 detected_intent="PROMISE_TO_PAY",
                 p2p_details=p2p_data,
                 next_action=InterventionType.HINGLISH_VOICE_P2P
@@ -271,7 +295,7 @@ Tone: Polite, respectful Indian conversational Hinglish. Empathize with technica
         # Hinglish personalized recovery achieves ~72% win-back rate for soft financial/declined payments
         success_prob = 0.74
         is_recovered = (random.random() < success_prob)
-        cost_incurred = 1.80  # WhatsApp template message + conversational AI cost in INR
+        cost_incurred = INTERVENTION_BASE_COSTS["HINGLISH_VOICE_P2P"]
 
         if is_recovered:
             settlement_ref = f"pay_hinglish_{random.randint(1000000, 9999999)}"
@@ -283,6 +307,7 @@ Tone: Polite, respectful Indian conversational Hinglish. Empathize with technica
                     "settlement_ref": settlement_ref,
                     "customer_name": txn.customer.name,
                     "phone": txn.customer.phone,
+                    "cost_incurred": cost_incurred,
                     "transcript_summary": f"Customer acknowledged via Hinglish audio nudge and settled ₹{txn.amount:.2f} via 1-click UPI intent link."
                 },
                 txn.amount
@@ -295,6 +320,7 @@ Tone: Polite, respectful Indian conversational Hinglish. Empathize with technica
                     "channel": "Hinglish Conversational Agent",
                     "customer_name": txn.customer.name,
                     "promised_followup": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d 11:00 AM IST"),
+                    "cost_incurred": cost_incurred,
                     "note": "Customer promised to pay on upcoming salary date. Aggressive dunning paused; reminder scheduled."
                 },
                 0.0

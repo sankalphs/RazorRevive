@@ -125,9 +125,9 @@ async def handle_razorpay_webhook(req: Request):
     phone = notes.get("customer_phone", "+91-9876500000")
     category = notes.get("category", "SaaS")
 
-    # Resolve live issuer health from the bank registry (fall back to a stable default)
-    from ..interventions.mandate_sequencer import BANK_HEALTH_REGISTRY
-    bank_health = BANK_HEALTH_REGISTRY.get(bank, {})
+    # Resolve live issuer health behind the Mandate module seam.
+    from ..interventions.mandate_sequencer import MandateRetrySequencer
+    bank_health = MandateRetrySequencer.get_bank_health(bank)
     bank_uptime = bank_health.get("uptime_pct", 94.0)
 
     # Build internal AtRiskTransaction

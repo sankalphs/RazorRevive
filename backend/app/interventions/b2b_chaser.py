@@ -1,6 +1,7 @@
 import random
 from typing import Dict, Any, Tuple
 from ..models.schemas import AtRiskTransaction, RecoveryStatus
+from .base import INTERVENTION_BASE_COSTS
 
 class B2BReceivablesChaser:
     """
@@ -42,7 +43,7 @@ class B2BReceivablesChaser:
         # B2B recovery rates average ~64% when provided with clean reconciliation tools
         success_prob = 0.65
         is_recovered = (random.random() < success_prob)
-        cost_incurred = 2.50  # Transactional notification & smart collect reconciliation overhead
+        cost_incurred = INTERVENTION_BASE_COSTS["B2B_COMPLIANT_DUNNING"]
 
         if is_recovered:
             settlement_ref = f"pay_b2b_va_{random.randint(1000000, 9999999)}"
@@ -55,6 +56,7 @@ class B2BReceivablesChaser:
                     "invoice_url": invoice_link,
                     "settlement_ref": settlement_ref,
                     "payment_mode": "NEFT/RTGS via Razorpay Smart Collect",
+                    "cost_incurred": cost_incurred,
                     "note": f"Accounts payable team cleared invoice #{txn.id[-6:]} following {stage['stage']} notification."
                 },
                 txn.amount
@@ -67,6 +69,7 @@ class B2BReceivablesChaser:
                     "stage": stage["stage"],
                     "virtual_account_assigned": virtual_account,
                     "invoice_url": invoice_link,
+                    "cost_incurred": cost_incurred,
                     "note": "Client AP team approved invoice into upcoming Friday payment disbursement batch."
                 },
                 0.0

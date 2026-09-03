@@ -5,8 +5,8 @@ from ..models.schemas import (
     ChatInteractionResponse,
     PromiseToPayRecord
 )
-from ..interventions.hinglish_agent import HinglishRecoveryAgent, p2p_registry
-from ..interventions.mandate_sequencer import BANK_HEALTH_REGISTRY
+from ..interventions.hinglish_agent import HinglishRecoveryAgent, list_p2p_commitments
+from ..interventions.mandate_sequencer import MandateRetrySequencer
 
 router = APIRouter(prefix="/api/agent", tags=["Agent & Hinglish P2P"])
 
@@ -56,16 +56,17 @@ async def chat_interaction(req: ChatInteractionRequest):
         customer_name=req.customer_name,
         merchant_name=req.merchant_name,
         amount=req.amount,
-        failure_reason=req.failure_reason
+        failure_reason=req.failure_reason,
+        transaction_id=req.transaction_id,
     )
 
 @router.get("/p2p", response_model=List[PromiseToPayRecord])
 async def list_p2p_records():
-    return list(p2p_registry.values())
+    return list_p2p_commitments()
 
 @router.get("/bank-health")
 async def get_bank_health():
-    return BANK_HEALTH_REGISTRY
+    return MandateRetrySequencer.get_registry_snapshot()
 
 @router.get("/scenarios")
 async def get_preset_scenarios():
