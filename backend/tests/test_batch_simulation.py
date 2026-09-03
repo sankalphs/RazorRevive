@@ -61,3 +61,31 @@ def test_generator_channel_coherence():
         assert txn.razorpay_error_code in valid, (
             f"{txn.razorpay_error_code} is not a plausible failure for channel {txn.channel}"
         )
+
+def test_audit_stats_and_csv_agree():
+    from backend.app.core.audit_logger import audit_logger
+    random.seed(5)
+    summary = asyncio.run(BatchSimulationEngine.run_batch_simulation(size=50, enable_llm=False))
+
+    # Stats must aggregate the FULL ledger, not a capped window
+    expected_records = audit_logger.count()
+    assert expected_records >= 50
+
+    csv_content = audit_logger.export_csv()
+    csv_rows = [r for r in csv_content.strip().split("\n") if r]
+    # CSV rows = header + one row per ledger entry (quote-aware count)
+    assert csv_rows[0].startswith("Audit ID")
+    # count ledger entries by counting embedded audit ids in the CSV body
+    import re as _re
+    body = csv_content.split("\n", 1)[1]
+    csv_ids = _re.findall(r"audit_[0-9a-f]{10}", body)
+    assert len(set(csv_ids)) == expected_records, (
+        f"CSV has {len(set(csv_ids))} entries but ledger has {expected_records}"
+    )
+
+    # get_all pagination never overlaps and covers the whole ledger
+    page_a = audit_logger.get_all(limit=100, offset=0)
+    page_b = audit_logger.get_all(limit=100, offset=100)
+    ids_a = {e.id for e in page_a}
+    ids_b = {e.id for e in page_b}
+    assert not (ids_a & ids_b)

@@ -20,6 +20,10 @@ class AuditLogger:
         reversed_list = list(reversed(self._entries))
         return reversed_list[offset : offset + limit]
 
+    def all_entries(self) -> List[AuditLogEntry]:
+        """Full ledger, newest first, for aggregate statistics."""
+        return list(reversed(self._entries))
+
     def count(self) -> int:
         return len(self._entries)
 

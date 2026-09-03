@@ -147,6 +147,18 @@ export const WebhookTester: React.FC = () => {
               <p className="text-[11px] text-[#7C93A6] mt-2">{error}</p>
               <p className="text-[10px] text-[#6A8296] mt-1">Fix the JSON on the left and re-dispatch.</p>
             </div>
+          ) : loading ? (
+            <div className="h-full min-h-[300px] border border-[#FFB300]/40 bg-[#FFB300]/[0.04] flex flex-col items-center justify-center text-center px-6">
+              <StatusLamp on ink={INK.amber} />
+              <div className="numeric text-[11px] text-[#FFB300] mt-3 tracking-wider flex items-center gap-2">
+                ACQUIRING SIGNAL
+                <span className="station-cursor">_</span>
+              </div>
+              <p className="text-[11px] text-[#7C93A6] mt-1.5 leading-relaxed">
+                Diagnosing, certifying guardrails, dispatching intervention — first response can take several
+                seconds while the LLM diagnostician reasons.
+              </p>
+            </div>
           ) : result ? (
             <div className="space-y-4 readout-arrival">
               {/* Final state */}

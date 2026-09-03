@@ -36,7 +36,9 @@ async def download_audit_csv():
 
 @router.get("/stats")
 async def get_audit_stats():
-    entries = audit_logger.get_all(limit=1000)
+    # Aggregate over the full ledger — never a capped window — so totals always
+    # match the CSV export even after thousands of audited events.
+    entries = audit_logger.all_entries()
     total_at_risk = sum(e.amount_at_risk for e in entries)
     total_recovered = sum(e.amount_recovered for e in entries)
     stopped_count = sum(1 for e in entries if e.final_status == RecoveryStatus.STOPPED_GUARDRAIL)
