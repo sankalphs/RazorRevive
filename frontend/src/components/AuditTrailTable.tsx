@@ -4,7 +4,7 @@ import { type AuditLogEntry, fetchAuditTrail } from '../services/api';
 import { PanelHeader, formatINR, StatusBadge, ComplianceBadge, DecisionRecord, humanizeIntervention, AUDIT_CSV_URL } from './telemetry';
 
 /* ============================================================
-   AUDIT LEDGER â€” every decision the engine made, why it
+   AUDIT LEDGER &#x2014; every decision the engine made, why it
    made it, and whether it passed the safety rules. Rows
    expand into the full decision record.
    ============================================================ */
@@ -63,7 +63,7 @@ export const AuditTrailTable = () => {
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-4" />
           <input
             type="text"
-            placeholder="Search transaction or merchantâ€¦"
+            placeholder="Search transaction or merchant..."
             aria-label="Search audit ledger"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -105,7 +105,7 @@ export const AuditTrailTable = () => {
           <option value="HARD_STOP_NO_ACTION">No action (stopped)</option>
         </select>
         <span className="text-[12.5px] text-ink-3 ml-auto numeric">
-          {loading ? 'Loadingâ€¦' : `${entries.length} records${entries.length >= 100 ? ' (showing first 100 â€” export CSV for all)' : ''}`}
+          {loading ? 'Loading...' : `${entries.length} records${entries.length >= 100 ? ' (showing first 100 &#x2014; export CSV for all)' : ''}`}
         </span>
       </div>
 
@@ -128,7 +128,7 @@ export const AuditTrailTable = () => {
             {loading ? (
               <tr>
                 <td colSpan={8} className="px-5 py-12 text-center text-[13px] text-ink-3">
-                  Loading recordsâ€¦
+                  Loading records...
                 </td>
               </tr>
             ) : failed ? (
@@ -143,7 +143,7 @@ export const AuditTrailTable = () => {
             ) : entries.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-5 py-12 text-center text-[13px] text-ink-3">
-                  No records yet â€” run a simulation or send a webhook to generate some.
+                  No records yet &#x2014; run a simulation or send a webhook to generate some.
                 </td>
               </tr>
             ) : (
@@ -165,7 +165,7 @@ export const AuditTrailTable = () => {
                         <StatusBadge status={e.final_status} />
                       </td>
                       <td className="px-4 py-2.5 numeric text-right text-ok font-medium">
-                        {e.amount_recovered > 0 ? formatINR(e.amount_recovered) : 'â€”'}
+                        {e.amount_recovered > 0 ? formatINR(e.amount_recovered) : '—'}
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         <button
@@ -179,7 +179,7 @@ export const AuditTrailTable = () => {
                       </td>
                     </tr>
 
-                    {/* Decision record â€” one shared shape */}
+                    {/* Decision record — one shared shape */}
                     {isExpanded && (
                       <tr className="bg-page">
                         <td colSpan={8} className="px-5 sm:px-8 py-4">

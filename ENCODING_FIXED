@@ -1,0 +1,6 @@
+Encoding fixes complete. All double-encoded UTF-8 characters fixed:
+- × (multiplication sign) in BatchSimulator.tsx:209 and MetricsOverview.tsx:100
+- · (middle dot) in BatchSimulator.tsx:149/179/194, HinglishVoiceAgent.tsx:190/227/242/245, MandateSequencerView.tsx:125/162/172
+- — (em dash) in BatchSimulator.tsx:7/55/116/119/231/265, MetricsOverview.tsx:6/7/45, AuditTrailTable.tsx:7/108/146, HinglishVoiceAgent.tsx:16/328, MandateSequencerView.tsx:7/163, WebhookTester.tsx:7/70/80/90/219
+
+All replacements use HTML entities (&#x00B7;, &#x2014;) or direct character replacement (×→x) to prevent double-encoding artifacts.

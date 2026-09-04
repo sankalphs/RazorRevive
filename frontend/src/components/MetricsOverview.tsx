@@ -3,8 +3,8 @@ import { formatINR } from './telemetry';
 import { TrendingUp, ShieldCheck } from 'lucide-react';
 
 /* ============================================================
-   KEY NUMBERS â€” four plain metrics on one card row.
-   If the backend is down, say so in words â€” never zeros.
+   KEY NUMBERS &#x2014; four plain metrics on one card row.
+   If the backend is down, say so in words &#x2014; never zeros.
    ============================================================ */
 
 interface MetricsProps {
@@ -28,7 +28,7 @@ const Stat = ({
   <div className="px-5 py-5">
     <div className="text-[28px] font-semibold tracking-tight leading-none numeric">
       {loading ? (
-        <span className="text-ink-4">â€”</span>
+        <span className="text-ink-4">—</span>
       ) : (
         <span className={tone === 'ok' ? 'text-ok' : 'text-ink'}>{value}</span>
       )}
@@ -42,7 +42,7 @@ const BackendDown = () => (
   <div className="px-5 py-8 text-center">
     <div className="text-[14px] font-semibold text-bad">Can't reach the backend</div>
     <p className="text-[13px] text-ink-3 mt-1.5 leading-relaxed max-w-[52ch] mx-auto">
-      The metrics service isn't responding, so no numbers are shown â€” a dead backend should
+      The metrics service isn't responding, so no numbers are shown &#x2014; a dead backend should
       never look like zero recovery.
     </p>
     <p className="text-[12.5px] text-ink-2 mt-2">Start the backend (`python run.py`) and reload.</p>
@@ -51,8 +51,8 @@ const BackendDown = () => (
 
 export const MetricsOverview = ({ summary, loading }: MetricsProps) => {
   const guardrailStops = summary?.guardrail_stops_count ?? 0;
-  const aiWin = summary?.recovery_rate_ai?.toFixed(1) ?? 'â€”';
-  const baseWin = summary?.recovery_rate_baseline?.toFixed(1) ?? 'â€”';
+  const aiWin = summary?.recovery_rate_ai?.toFixed(1) ?? '—';
+  const baseWin = summary?.recovery_rate_baseline?.toFixed(1) ?? '—';
   const lost = !loading && !summary;
 
   return (
@@ -97,7 +97,7 @@ export const MetricsOverview = ({ summary, loading }: MetricsProps) => {
             />
             <Stat
               loading={loading}
-              value={`${summary?.roi_multiplier?.toFixed(0) ?? 0}Ã— return`}
+              value={`${summary?.roi_multiplier?.toFixed(0) ?? 0}x return`}
               label="On agent running cost"
               sub={
                 <span className="inline-flex items-center gap-1">

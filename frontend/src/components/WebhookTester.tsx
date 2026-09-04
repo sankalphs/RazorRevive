@@ -4,7 +4,7 @@ import { fetchSampleWebhooks, sendWebhookEvent, type AuditLogEntry, type Webhook
 import { PanelHeader, formatINR, statusTone, DecisionRecord, humanizeIntervention, sampleLabel } from './telemetry';
 
 /* ============================================================
-   WEBHOOK TESTER â€” paste a Razorpay event, watch the engine
+   WEBHOOK TESTER &#x2014; paste a Razorpay event, watch the engine
    classify it, check it against safety rules, and act.
    ============================================================ */
 
@@ -67,7 +67,7 @@ export const WebhookTester: React.FC = () => {
 
   const copyPayload = () => {
     if (!navigator.clipboard) {
-      setError({ kind: 'network', message: 'Copy is not available in this browser â€” select the text manually.' });
+      setError({ kind: 'network', message: 'Copy is not available in this browser &#x2014; select the text manually.' });
       return;
     }
     navigator.clipboard
@@ -77,7 +77,7 @@ export const WebhookTester: React.FC = () => {
         setTimeout(() => setCopied(false), 1500);
       })
       .catch(() => {
-        setError({ kind: 'network', message: 'Copy failed â€” select the text manually.' });
+        setError({ kind: 'network', message: 'Copy failed &#x2014; select the text manually.' });
       });
   };
 
@@ -87,7 +87,7 @@ export const WebhookTester: React.FC = () => {
       <section className="bg-white border border-line rounded-xl shadow-card flex flex-col" aria-label="Send a webhook">
         <PanelHeader
           title="Send a webhook"
-          subtitle="Pick a sample Razorpay event â€” or paste your own â€” and send it through the full pipeline: diagnosis, safety checks, action."
+          subtitle="Pick a sample Razorpay event &#x2014; or paste your own &#x2014; and send it through the full pipeline: diagnosis, safety checks, action."
           right={
             <button
               onClick={copyPayload}
@@ -146,7 +146,7 @@ export const WebhookTester: React.FC = () => {
             {loading ? (
               <>
                 <span className="w-4 h-4 rounded-full border-2 border-ink-4 border-t-transparent animate-spin" />
-                Processingâ€¦
+                Processing...
               </>
             ) : (
               <>
@@ -181,7 +181,7 @@ export const WebhookTester: React.FC = () => {
           ) : loading ? (
             <div className="h-full min-h-[300px] border border-line bg-page rounded-lg flex flex-col items-center justify-center text-center px-6">
               <span className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-              <div className="text-[13.5px] font-medium text-ink mt-3">Processing the eventâ€¦</div>
+              <div className="text-[13.5px] font-medium text-ink mt-3">Processing the event...</div>
               <p className="text-[12.5px] text-ink-3 mt-1.5 leading-relaxed">
                 Diagnosing the failure, checking safety rules, choosing an action.
               </p>
@@ -216,7 +216,7 @@ export const WebhookTester: React.FC = () => {
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-ink-3">Settlement ref</span>
-                  <span className="text-ink numeric">{result.settlement_ref || 'None â€” deferred or stopped'}</span>
+                  <span className="text-ink numeric">{result.settlement_ref || 'None &#x2014; deferred or stopped'}</span>
                 </div>
               </div>
             </div>
