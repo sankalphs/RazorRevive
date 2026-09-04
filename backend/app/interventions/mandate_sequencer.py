@@ -1,7 +1,9 @@
 import random
 from typing import Dict, Any, Tuple
 from datetime import datetime, timedelta
+from ..config import PRE_DEBIT_NOTIFICATION_HOURS
 from ..models.schemas import AtRiskTransaction, RecoveryStatus
+from ..core.policy_guardrails import get_current_ist_time
 from .base import INTERVENTION_BASE_COSTS
 
 # Real-time simulated uptime status for major Indian banks
@@ -42,7 +44,7 @@ class MandateRetrySequencer:
         bank = MandateRetrySequencer.get_bank_health(txn.issuer_bank)
         uptime = bank["uptime_pct"]
         
-        now = datetime.now()
+        now = get_current_ist_time()
         day_of_month = now.day
         is_salary_window = (day_of_month >= 28 or day_of_month <= 5)
 
@@ -59,12 +61,14 @@ class MandateRetrySequencer:
             strategy = "Standard optimal clearing window schedule."
 
         scheduled_time = now + timedelta(hours=delay_hours)
+        pre_debit_notice = scheduled_time - timedelta(hours=PRE_DEBIT_NOTIFICATION_HOURS)
         return {
             "strategy": strategy,
             "bank_uptime": uptime,
             "bank_status": bank["status"],
             "delay_hours": delay_hours,
             "scheduled_time_ist": scheduled_time.strftime("%Y-%m-%d %H:%M:%S IST"),
+            "pre_debit_notification_ist": pre_debit_notice.strftime("%Y-%m-%d %H:%M:%S IST"),
             "salary_window_boost": is_salary_window
         }
 

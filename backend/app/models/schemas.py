@@ -147,6 +147,6 @@ class ChatInteractionRequest(BaseModel):
 class ChatInteractionResponse(BaseModel):
     reply: str
     audio_text_hinglish: str
-    detected_intent: Optional[str] = None  # PROMISE_TO_PAY, REQUEST_LINK, DISPUTE, HARDSHIP, DND, UNKNOWN
+    detected_intent: Optional[str] = None  # PROMISE_TO_PAY, REQUEST_LINK, DISPUTE_CLAIMED, HARDSHIP_PAUSE, DND_OPTOUT, GENERAL_INQUIRY
     p2p_details: Optional[Dict[str, Any]] = None
     next_action: InterventionType

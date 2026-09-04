@@ -72,6 +72,46 @@ def test_rbi_contact_hours_compliance():
     assert not rbi_ok_night
     assert defer_night is not None
 
+
+def test_out_of_hours_transactions_are_queued_not_dropped():
+    """The RBI-hours 'deferred' outcome must park the transaction in the
+    DeferralQueue so the dispatcher — not a log line — owns the follow-up."""
+    import asyncio
+    from backend.app.core.engine import RecoveryOrchestrator, DeferralQueue
+    from backend.app.core.audit_logger import audit_logger
+    from backend.app.core.policy_guardrails import get_current_ist_time
+
+    DeferralQueue.clear()
+    # Freeze the dispatcher clock at a fixed in-window moment: nothing is
+    # due yet, so the queue must keep the deferred item.
+    DeferralQueue._now_fn = lambda: datetime(2026, 9, 3, 8, 30, tzinfo=IST_OFFSET)
+    try:
+        before_count = audit_logger.count()
+        txn = make_txn()
+        # Force the night-hours branch with an explicit out-of-window time.
+        entry = asyncio.run(RecoveryOrchestrator.process_at_risk_transaction(
+            txn, use_llm=False, custom_time=datetime(2026, 9, 3, 23, 0, tzinfo=IST_OFFSET)
+        ))
+
+        assert entry.compliance.rbi_hours_ok is False
+        assert entry.final_status.value == "IN_PROGRESS"
+        queued = asyncio.run(DeferralQueue.snapshot())
+        assert any(q["transaction_id"] == txn.id for q in queued)
+        assert audit_logger.count() == before_count + 1
+
+        # Advancing the dispatcher clock past the deferred-until time must
+        # drain the queue and execute the parked intervention.
+        DeferralQueue._now_fn = lambda: datetime(2026, 9, 4, 9, 0, tzinfo=IST_OFFSET)
+        due = DeferralQueue._pull_due()
+        assert any(it["txn"].id == txn.id for it in due)
+        executed = asyncio.run(DeferralQueue._run_deferred(due[0]))
+        assert executed.final_status.value in ("RECOVERED", "FAILED", "P2P_SCHEDULED", "IN_PROGRESS")
+        assert "deferred_from" in executed.action_details
+        assert executed.intervention.value != "HARD_STOP_NO_ACTION"
+    finally:
+        DeferralQueue._now_fn = None
+        DeferralQueue.clear()
+
 def test_opt_out_keyword_detection():
     assert check_customer_opt_out("Please stop calling me")
     assert check_customer_opt_out("mat phone karo please")

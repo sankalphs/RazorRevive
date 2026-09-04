@@ -1,10 +1,10 @@
-import { useState, useEffect, Fragment } from 'react';
+﻿import { useState, useEffect, Fragment } from 'react';
 import { Search, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { type AuditLogEntry, fetchAuditTrail } from '../services/api';
 import { PanelHeader, formatINR, StatusBadge, ComplianceBadge, DecisionRecord, humanizeIntervention, AUDIT_CSV_URL } from './telemetry';
 
 /* ============================================================
-   AUDIT LEDGER — every decision the engine made, why it
+   AUDIT LEDGER â€” every decision the engine made, why it
    made it, and whether it passed the safety rules. Rows
    expand into the full decision record.
    ============================================================ */
@@ -16,12 +16,15 @@ export const AuditTrailTable = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [interventionFilter, setInterventionFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+  // The query actually applied to the ledger. Typing updates `search`
+  // only; it reaches the API exclusively via Enter / the Search button.
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setFailed(false);
-    fetchAuditTrail(statusFilter, interventionFilter, search)
+    fetchAuditTrail(statusFilter, interventionFilter, appliedSearch)
       .then((data) => {
         setEntries(data);
         setLoading(false);
@@ -31,23 +34,10 @@ export const AuditTrailTable = () => {
         setFailed(true);
         setLoading(false);
       });
-    // search is intentionally excluded: typing does not auto-fetch; press Enter or Search button instead
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, interventionFilter]);
+  }, [statusFilter, interventionFilter, appliedSearch]);
 
   const applySearch = () => {
-    setLoading(true);
-    setFailed(false);
-    fetchAuditTrail(statusFilter, interventionFilter, search)
-      .then((data) => {
-        setEntries(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Audit log error:', err);
-        setFailed(true);
-        setLoading(false);
-      });
+    setAppliedSearch(search);
   };
 
   return (
@@ -73,7 +63,7 @@ export const AuditTrailTable = () => {
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-4" />
           <input
             type="text"
-            placeholder="Search transaction or merchant…"
+            placeholder="Search transaction or merchantâ€¦"
             aria-label="Search audit ledger"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -115,7 +105,7 @@ export const AuditTrailTable = () => {
           <option value="HARD_STOP_NO_ACTION">No action (stopped)</option>
         </select>
         <span className="text-[12.5px] text-ink-3 ml-auto numeric">
-          {loading ? 'Loading…' : `${entries.length} records`}
+          {loading ? 'Loadingâ€¦' : `${entries.length} records${entries.length >= 100 ? ' (showing first 100 â€” export CSV for all)' : ''}`}
         </span>
       </div>
 
@@ -138,7 +128,7 @@ export const AuditTrailTable = () => {
             {loading ? (
               <tr>
                 <td colSpan={8} className="px-5 py-12 text-center text-[13px] text-ink-3">
-                  Loading records…
+                  Loading recordsâ€¦
                 </td>
               </tr>
             ) : failed ? (
@@ -146,14 +136,14 @@ export const AuditTrailTable = () => {
                 <td colSpan={8} className="px-5 py-12 text-center">
                   <div className="text-[13.5px] font-semibold text-bad">Can't load the ledger</div>
                   <p className="text-[13px] text-ink-3 mt-1">
-                    The audit service isn't responding. Start the backend on port 8000 and reload.
+                    The audit service isn't responding. Start the backend (`python run.py`) and reload.
                   </p>
                 </td>
               </tr>
             ) : entries.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-5 py-12 text-center text-[13px] text-ink-3">
-                  No records yet — run a simulation or send a webhook to generate some.
+                  No records yet â€” run a simulation or send a webhook to generate some.
                 </td>
               </tr>
             ) : (
@@ -175,7 +165,7 @@ export const AuditTrailTable = () => {
                         <StatusBadge status={e.final_status} />
                       </td>
                       <td className="px-4 py-2.5 numeric text-right text-ok font-medium">
-                        {e.amount_recovered > 0 ? formatINR(e.amount_recovered) : '—'}
+                        {e.amount_recovered > 0 ? formatINR(e.amount_recovered) : 'â€”'}
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         <button
@@ -189,7 +179,7 @@ export const AuditTrailTable = () => {
                       </td>
                     </tr>
 
-                    {/* Decision record — one shared shape */}
+                    {/* Decision record â€” one shared shape */}
                     {isExpanded && (
                       <tr className="bg-page">
                         <td colSpan={8} className="px-5 sm:px-8 py-4">

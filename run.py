@@ -14,27 +14,58 @@ import webbrowser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-BACKEND_PORT = os.getenv("BACKEND_PORT", "8000")
+
+
+def _resolve_backend_port() -> str:
+    """Backend reads .env via python-dotenv; mirror that here so the
+    boot banner and frontend proxy always match the served port."""
+    try:
+        from dotenv import dotenv_values
+        env_port = dotenv_values(ROOT / ".env").get("BACKEND_PORT")
+        if env_port:
+            return env_port
+    except Exception:
+        pass
+    return os.getenv("BACKEND_PORT", "8000")
+
+
+BACKEND_PORT = _resolve_backend_port()
 FRONTEND_PORT = "5173"
+
+
+def _resolve_backend_host() -> str:
+    """Mirror the backend's .env handling so the boot banner and the
+    uvicorn bind always match config."""
+    try:
+        from dotenv import dotenv_values
+        env_host = dotenv_values(ROOT / ".env").get("BACKEND_HOST")
+        if env_host:
+            return env_host
+    except Exception:
+        pass
+    return os.getenv("BACKEND_HOST", "127.0.0.1")
+
+
+BACKEND_HOST = _resolve_backend_host()
 
 processes = []
 
 
 def check_backend_deps() -> bool:
+    # Import the app itself: catches every transitive dependency
+    # (pydantic, dotenv, etc.), not just the obvious three.
     try:
-        import fastapi  # noqa: F401
-        import uvicorn  # noqa: F401
-        import httpx  # noqa: F401
+        from backend.app.main import app  # noqa: F401
         return True
     except ImportError:
         return False
 
 
 def start_backend() -> subprocess.Popen:
-    print(f"[RazorRevive] Starting FastAPI backend on http://127.0.0.1:{BACKEND_PORT} ...")
+    print(f"[RazorRevive] Starting FastAPI backend on http://{BACKEND_HOST}:{BACKEND_PORT} ...")
     backend_cmd = [
         sys.executable, "-m", "uvicorn",
-        "backend.app.main:app", "--host", "0.0.0.0", "--port", BACKEND_PORT
+        "backend.app.main:app", "--host", BACKEND_HOST, "--port", BACKEND_PORT
     ]
     return subprocess.Popen(backend_cmd, cwd=ROOT)
 

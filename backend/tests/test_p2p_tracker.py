@@ -51,6 +51,19 @@ def test_promise_time_extraction_accuracy():
     _, t = HinglishRecoveryAgent.parse_promise_to_pay_date("Kal 5 pm")
     assert t == "05:00 PM IST"
 
+    # Out-of-range hours are normalised as 24-hour style, never nonsense times
+    _, t = HinglishRecoveryAgent.parse_promise_to_pay_date("Kal 13 baje")
+    assert t == "01:00 PM IST"
+
+    _, t = HinglishRecoveryAgent.parse_promise_to_pay_date("Kal 14 baje")
+    assert t == "02:00 PM IST"
+
+    _, t = HinglishRecoveryAgent.parse_promise_to_pay_date("Kal 0 baje")
+    assert t == "12:00 AM IST"
+
+    _, t = HinglishRecoveryAgent.parse_promise_to_pay_date("Kal 25 baje")
+    assert t == "01:00 PM IST"
+
 def test_promise_deferred_date_extraction():
     # "X din baad" relative days
     from datetime import datetime, timedelta

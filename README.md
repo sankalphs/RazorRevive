@@ -135,6 +135,7 @@ If the key is missing or the LLM times out, the deterministic heuristic engine t
 | `/api/audit` | GET | Query audit trail (status / intervention / category / search) |
 | `/api/audit/csv` | GET | Download audit trail as CSV |
 | `/api/audit/stats` | GET | Aggregate audit statistics |
+| `/api/audit/deferred` | GET | Live view of actions parked for the next RBI contact window |
 
 Interactive docs: `http://127.0.0.1:8000/docs`
 
@@ -148,14 +149,14 @@ Interactive docs: `http://127.0.0.1:8000/docs`
 
 ## 7. Verification
 
-### Automated tests (23 tests)
+### Automated tests (39 tests)
 
 ```bash
 python -m pytest backend/tests -v
 ```
 
 - `test_diagnostics.py` — classification accuracy across all 5 failure categories
-- `test_guardrails.py` — RBI hours, hard stops, DND, hardship, touch ceiling
+- `test_guardrails.py` — RBI hours, hard stops, DND, hardship, touch ceiling, deferral queue
 - `test_p2p_tracker.py` — Hinglish intent extraction & promise date parsing
 - `test_batch_simulation.py` — accounting integrity, channel coherence, baseline harassment rules, audit counts
 
@@ -189,7 +190,7 @@ RevenueRecovery/
 │   │   ├── simulation/       # generator + baseline-vs-AI runner
 │   │   ├── models/schemas.py # Pydantic contracts
 │   │   └── api/              # batch, agent, webhook, audit routes
-│   └── tests/                # 23 pytest cases
+│   └── tests/               # 39 pytest cases
 └── frontend/
     └── src/
         ├── App.tsx           # Executive dashboard shell

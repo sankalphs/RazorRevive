@@ -2,7 +2,7 @@ import uuid
 import random
 import asyncio
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict
 
 from ..models.schemas import (
     AtRiskTransaction,
@@ -13,7 +13,6 @@ from ..models.schemas import (
 )
 from .batch_generator import generate_synthetic_batch
 from ..core.engine import RecoveryOrchestrator
-from ..core.audit_logger import audit_logger
 from ..core.policy_guardrails import baseline_should_skip
 
 class BatchSimulationEngine:
@@ -86,7 +85,7 @@ class BatchSimulationEngine:
         
         # Process transactions concurrently in batches of 20
         # Simulate active operational hours (11:30 AM IST) for batch performance measurement
-        from ..core.policy_guardrails import IST_OFFSET
+        from ..core.policy_guardrails import IST_OFFSET, ist_timestamp
         now = datetime.now(IST_OFFSET)
         simulation_daytime = now.replace(hour=11, minute=30, second=0)
 
@@ -126,7 +125,7 @@ class BatchSimulationEngine:
 
         summary = BatchSummary(
             batch_id=batch_id,
-            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
+            timestamp=ist_timestamp(),
             total_transactions=len(transactions),
             total_revenue_at_risk=round(total_at_risk, 2),
             total_recovered_ai=round(ai_recovered, 2),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Send, Volume2, Lock, Clock3, Bot, User } from 'lucide-react';
 import {
   type ChatMessage,
@@ -7,17 +7,18 @@ import {
   type PromiseToPayRecord,
   sendChatMessage,
   fetchPresetScenarios,
+  fetchP2PRecords,
 } from '../services/api';
 import { speakHinglish, stopSpeech } from '../services/voice';
 import { PanelHeader, formatINR, istStamp } from './telemetry';
 
 /* ============================================================
-   AI AGENT — talk to Priya, the Hinglish recovery agent.
+   AI AGENT â€” talk to Priya, the Hinglish recovery agent.
    A normal chat UI: bubbles, composer, quick replies. When
    a payment promise is detected, it's tracked on the side.
    ============================================================ */
 
-export const QUICK_REPLIES = [
+const QUICK_REPLIES = [
   'Kal shaam 6 baje payment karunga',
   'Direct UPI link WhatsApp pe bhej do',
   'Maine already pay kar diya hai',
@@ -34,8 +35,17 @@ export const HinglishVoiceAgent: React.FC = () => {
   const [sendFailed, setSendFailed] = useState(false);
   const [voiceUnsupported, setVoiceUnsupported] = useState(false);
   const [p2pCommitment, setP2pCommitment] = useState<PromiseToPayRecord | null>(null);
+  const [registry, setRegistry] = useState<PromiseToPayRecord[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const refreshRegistry = () => {
+    fetchP2PRecords()
+      .then(setRegistry)
+      .catch(() => {
+        // Registry panel is supplementary; failures stay silent.
+      });
+  };
 
   useEffect(() => {
     fetchPresetScenarios()
@@ -96,6 +106,7 @@ export const HinglishVoiceAgent: React.FC = () => {
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: response.reply, timestamp: istStamp() }]);
       if (response.p2p_details) setP2pCommitment(response.p2p_details);
+      refreshRegistry();
       speakText(response.audio_text_hinglish);
     } catch (err) {
       console.error('Agent chat error:', err);
@@ -124,7 +135,7 @@ export const HinglishVoiceAgent: React.FC = () => {
               </div>
             ) : scenarios.length === 0 ? (
               <div className="border border-dashed border-line-strong rounded-lg px-4 py-8 text-center text-[13px] text-ink-3">
-                Loading scenarios…
+                Loading scenariosâ€¦
               </div>
             ) : (
               scenarios.map((sc) => {
@@ -176,7 +187,7 @@ export const HinglishVoiceAgent: React.FC = () => {
                   Promised for {p2pCommitment.promised_date} at {p2pCommitment.promised_time} IST
                 </div>
                 <div className="mt-3 pt-3 border-t border-warn-line text-[12.5px] font-medium text-warn">
-                  Follow-up paused · reminder scheduled
+                  Follow-up paused Â· reminder scheduled
                 </div>
               </div>
             ) : (
@@ -190,6 +201,36 @@ export const HinglishVoiceAgent: React.FC = () => {
             )}
           </div>
         </section>
+
+        {/* Promise registry â€” every tracked promise, server-side */}
+        {registry.length > 0 && (
+          <section className="bg-white border border-line rounded-xl shadow-card" aria-label="Promise registry">
+            <PanelHeader
+              title="Promise registry"
+              subtitle={`All ${registry.length} tracked promise${registry.length === 1 ? '' : 's'} across sessions. Dunning stays paused on each until its due time.`}
+            />
+            <div className="px-5 pb-5 space-y-2">
+              {registry.slice().reverse().map((rec) => (
+                <div
+                  key={rec.id}
+                  className={`rounded-lg border px-3.5 py-2.5 text-[12.5px] transition-colors ${
+                    rec.id === p2pCommitment?.id
+                      ? 'border-warn-line bg-warn-soft'
+                      : 'border-line bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-ink">{rec.customer_name}</span>
+                    <span className="text-ink-3 numeric">{formatINR(rec.amount)}</span>
+                  </div>
+                  <div className="text-ink-3 numeric mt-0.5">
+                    {rec.promised_date} Â· {rec.promised_time}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Chat */}
@@ -198,10 +239,10 @@ export const HinglishVoiceAgent: React.FC = () => {
         aria-label="Agent chat"
       >
         <PanelHeader
-          title={`Priya · ${selectedScenario?.merchant_name ?? 'recovery agent'}`}
+          title={`Priya Â· ${selectedScenario?.merchant_name ?? 'recovery agent'}`}
           subtitle={
             selectedScenario
-              ? `Chatting with ${selectedScenario.customer_name} about ${formatINR(selectedScenario.amount)} · speaks Hinglish, respects DND and hardship signals`
+              ? `Chatting with ${selectedScenario.customer_name} about ${formatINR(selectedScenario.amount)} Â· speaks Hinglish, respects DND and hardship signals`
               : 'Pick a scenario to start'
           }
           right={
@@ -218,7 +259,7 @@ export const HinglishVoiceAgent: React.FC = () => {
                 }`}
               >
                 <Volume2 className="w-3.5 h-3.5" />
-                {isSpeaking ? 'Speaking…' : 'Play voice'}
+                {isSpeaking ? 'Speakingâ€¦' : 'Play voice'}
               </button>
               {isSpeaking && (
                 <button
@@ -275,7 +316,7 @@ export const HinglishVoiceAgent: React.FC = () => {
               <div className="arrive max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-tl-sm bg-bad-soft border border-bad-line">
                 <div className="text-[13px] font-medium text-bad">Message failed to send</div>
                 <p className="text-[12.5px] text-ink-3 mt-1">
-                  The agent service didn't respond. Check the backend on port 8000 and send again.
+                  The agent service didn't respond. Check the backend (`python run.py`) and send again.
                 </p>
               </div>
             </div>
@@ -284,7 +325,7 @@ export const HinglishVoiceAgent: React.FC = () => {
             <div className="flex justify-start">
               <div className="arrive max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-tl-sm bg-warn-soft border border-warn-line">
                 <p className="text-[12.5px] text-ink-3">
-                  This browser can't play the Hinglish voice — the text chat still works normally.
+                  This browser can't play the Hinglish voice â€” the text chat still works normally.
                 </p>
               </div>
             </div>
@@ -296,7 +337,7 @@ export const HinglishVoiceAgent: React.FC = () => {
                   <Bot className="w-3.5 h-3.5" />
                 </div>
                 <div className="px-3.5 py-2.5 bg-white border border-line text-[13px] text-ink-3 rounded-2xl rounded-tl-sm">
-                  Priya is typing<span className="animate-pulse">…</span>
+                  Priya is typing<span className="animate-pulse">â€¦</span>
                 </div>
               </div>
             </div>
@@ -325,7 +366,7 @@ export const HinglishVoiceAgent: React.FC = () => {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Reply as the customer — Hinglish or English…"
+              placeholder="Reply as the customer â€” Hinglish or Englishâ€¦"
               aria-label="Message Priya"
               className="field flex-1 px-3.5 py-2.5 text-[13.5px] caret-accent"
             />

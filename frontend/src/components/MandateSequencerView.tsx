@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Zap, Ban, CheckCircle2 } from 'lucide-react';
 import { fetchBankHealth, type BankHealthInfo } from '../services/api';
 import { PanelHeader } from './telemetry';
 
 /* ============================================================
-   BANK HEALTH — which issuer gateways are up, which are
+   BANK HEALTH â€” which issuer gateways are up, which are
    struggling, and why smart timing beats fixed-clock retries.
    ============================================================ */
 
@@ -36,14 +36,14 @@ export const MandateSequencerView: React.FC = () => {
             <div className="border border-bad-line bg-bad-soft rounded-lg px-4 py-6 text-center">
               <div className="text-[13.5px] font-semibold text-bad">Bank health data unavailable</div>
               <p className="text-[13px] text-ink-3 mt-1.5">
-                The bank-health service isn't responding. Start the backend on port 8000 and reload.
+                The bank-health service isn't responding. Start the backend (`python run.py`) and reload.
               </p>
             </div>
           </div>
         ) : bankList.length === 0 ? (
           <div className="px-5 pb-5">
             <div className="border border-dashed border-line-strong rounded-lg px-4 py-6 text-center text-[13px] text-ink-3">
-              Loading bank health…
+              Loading bank healthâ€¦
             </div>
           </div>
         ) : (
@@ -122,7 +122,7 @@ export const MandateSequencerView: React.FC = () => {
               },
               {
                 stamp: '11:00',
-                title: 'Retries exhausted · mandate cancelled',
+                title: 'Retries exhausted Â· mandate cancelled',
                 body: 'Three attempts spent against a struggling bank. The customer eats bounce fees; the subscription is lost.',
               },
             ].map((step) => (
@@ -159,8 +159,8 @@ export const MandateSequencerView: React.FC = () => {
             {[
               {
                 stamp: '08:00',
-                title: 'Detects · temporary bank failure',
-                body: 'SBI gateway is struggling — the engine holds the retry to protect the attempt quota and avoid a bounce charge.',
+                title: 'Detects Â· temporary bank failure',
+                body: 'SBI gateway is struggling â€” the engine holds the retry to protect the attempt quota and avoid a bounce charge.',
               },
               {
                 stamp: '13:30',
@@ -169,7 +169,7 @@ export const MandateSequencerView: React.FC = () => {
               },
               {
                 stamp: '13:31',
-                title: 'Debit succeeds · ₹0 bounce fees',
+                title: 'Debit succeeds Â· â‚¹0 bounce fees',
                 body: 'The payment lands on the first attempt after recovery, fully logged with a settlement reference.',
               },
             ].map((step) => (

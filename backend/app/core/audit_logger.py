@@ -1,7 +1,7 @@
 import csv
 import io
 import threading
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from ..models.schemas import AuditLogEntry, RecoveryStatus, FailureCategory, InterventionType
 
 class AuditLogger:

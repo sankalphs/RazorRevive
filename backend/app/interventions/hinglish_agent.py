@@ -13,7 +13,7 @@ from ..models.schemas import (
     ChatInteractionResponse,
     PromiseToPayRecord
 )
-from ..core.policy_guardrails import check_customer_opt_out, check_customer_hardship
+from ..core.policy_guardrails import check_customer_opt_out, check_customer_hardship, get_current_ist_time
 from .base import INTERVENTION_BASE_COSTS
 
 # In-memory registry for tracked Promise-to-Pay commitments.
@@ -112,21 +112,34 @@ class HinglishRecoveryAgent:
         hour_match = re.search(r"(\d{1,2})\s*(baje|pm|am)\b", lower)
         if hour_match:
             hr = int(hour_match.group(1))
-            if hr < 1 or hr > 12:
-                hr = min(max(hr, 1), 12)
+            # Normalise 24-hour-style hours ("13 baje" = 1 PM, "0 baje" = midnight)
+            if hr == 0:
+                hr = 12
+                hr_period_override = "AM"
+            elif 13 <= hr <= 23:
+                hr = hr - 12
+                hr_period_override = "PM"
+            elif hr > 23:
+                # Absurd input: clamp to a sane evening default
+                hr = 1
+                hr_period_override = "PM"
+            else:
+                hr_period_override = None
             if period:
                 # Explicit part-of-day word wins over numeric guessing
                 promised_time = f"{hr:02d}:00 {period} IST"
+            elif hr_period_override:
+                promised_time = f"{hr:02d}:00 {hr_period_override} IST"
             else:
                 cue = hour_match.group(2)
                 if cue in ("pm", "am"):
                     resolved = cue.upper()
-                elif hr >= 9:
-                    # Indian conversational default: 9-12 baje is daytime (AM)
-                    resolved = "AM"
-                else:
+                elif 1 <= hr <= 8:
                     # Early hours without a cue default to evening commitments
                     resolved = "PM"
+                else:
+                    # Indian conversational default: 9-12 baje is daytime (AM)
+                    resolved = "AM"
                 promised_time = f"{hr:02d}:00 {resolved} IST"
 
         if promised_date or promised_time:
@@ -319,7 +332,7 @@ Tone: Polite, respectful Indian conversational Hinglish. Empathize with technica
                     "action": "PROMISE_TO_PAY_LOGGED",
                     "channel": "Hinglish Conversational Agent",
                     "customer_name": txn.customer.name,
-                    "promised_followup": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d 11:00 AM IST"),
+                    "promised_followup": (get_current_ist_time() + timedelta(days=2)).strftime("%Y-%m-%d 11:00 AM IST"),
                     "cost_incurred": cost_incurred,
                     "note": "Customer promised to pay on upcoming salary date. Aggressive dunning paused; reminder scheduled."
                 },

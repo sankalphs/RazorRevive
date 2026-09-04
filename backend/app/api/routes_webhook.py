@@ -87,51 +87,91 @@ async def get_sample_webhooks():
 async def handle_razorpay_webhook(req: Request):
     """
     Ingests and recovers live Razorpay webhooks in real-time.
-    Supports payment.failed, subscription.halted, order.paid, invoice.overdue.
+    Routes by payload shape (payment / subscription entity) and uses the
+    event type to channel non-payment events (e.g. invoice.overdue) to
+    the right recovery lane. Unknown events still parse defensively.
     """
     try:
         body: Dict[str, Any] = await req.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON payload. Send a valid Razorpay webhook object.")
-    event_type = body.get("event", "payment.failed")
-    payload = body.get("payload", {})
-    
+    event_type = str(body.get("event", "payment.failed"))
+    raw_payload = body.get("payload", {})
+    payload = raw_payload if isinstance(raw_payload, dict) else {}
+    merchant_name = customer_name = category = ""
+
     # Extract entity details safely
-    if "payment" in payload:
-        entity = payload["payment"].get("entity", {})
+    if isinstance(payload.get("payment"), dict):
+        wrapped = payload["payment"].get("entity", {}) or {}
+        entity = wrapped if isinstance(wrapped, dict) else {}
         # Preserve the caller's payment id so ledger entries correlate
         # 1:1 with the source webhook.
         source_ref = entity.get("id")
-        amount = float(entity.get("amount", 100000)) / 100.0  # paise to INR
-        error_code = entity.get("error_code", "GATEWAY_ERROR")
-        error_desc = entity.get("error_description", "Payment transaction failed")
-        bank = entity.get("bank", "HDFC")
-        notes = entity.get("notes", {})
+        try:
+            amount = float(entity.get("amount", 100000)) / 100.0  # paise to INR
+        except (TypeError, ValueError):
+            amount = 1499.0
+        error_code = entity.get("error_code") or "GATEWAY_ERROR"
+        error_desc = entity.get("error_description") or "Payment transaction failed"
+        bank = entity.get("bank") or "HDFC"
+        raw_notes = entity.get("notes", {})
+        notes = raw_notes if isinstance(raw_notes, dict) else {}
         channel = "UPI_AUTOPAY" if entity.get("method") == "upi" else "CARD_MANDATE"
-    elif "subscription" in payload:
-        entity = payload["subscription"].get("entity", {})
+    elif isinstance(payload.get("subscription"), dict):
+        wrapped = payload["subscription"].get("entity", {}) or {}
+        entity = wrapped if isinstance(wrapped, dict) else {}
         source_ref = entity.get("id")
-        notes = entity.get("notes", {})
-        amount = float(notes.get("amount", 999.0))
-        error_code = notes.get("error_code", "INSUFFICIENT_FUNDS")
-        error_desc = notes.get("error_description", "Subscription debit halted")
+        raw_notes = entity.get("notes", {})
+        notes = raw_notes if isinstance(raw_notes, dict) else {}
+        try:
+            amount = float(notes.get("amount", 999.0))
+        except (TypeError, ValueError):
+            amount = 999.0
+        error_code = notes.get("error_code") or "INSUFFICIENT_FUNDS"
+        error_desc = notes.get("error_description") or "Subscription debit halted"
         bank = "SBIN"
         channel = "UPI_AUTOPAY"
     else:
-        # Fallback generic parsing
+        # Fallback generic parsing. The event type keeps invoice/receivable
+        # events out of the card-mandate lane instead of fabricating a
+        # gateway failure for them.
         entity = {}
-        notes = {}
-        source_ref = None
-        amount = 1499.0
-        error_code = "GATEWAY_ERROR"
-        error_desc = "Transaction failed"
+        notes = payload.get("invoice", {}).get("entity", {}) if isinstance(payload.get("invoice"), dict) else {}
+        if not isinstance(notes, dict):
+            notes = {}
+        source_ref = notes.get("id") or notes.get("invoice_id")
+        try:
+            amount = float(notes.get("amount", notes.get("amount_paid", 1499.0)))
+        except (TypeError, ValueError):
+            amount = 1499.0
+        if "invoice" in event_type or "order" in event_type:
+            error_code = "INVOICE_OVERDUE_30_DAYS"
+            error_desc = "Invoice receivable event received via webhook"
+            channel = "B2B_INVOICE"
+        else:
+            error_code = "GATEWAY_ERROR"
+            error_desc = "Transaction failed"
+            channel = "GATEWAY_CHECKOUT"
         bank = "HDFC"
-        channel = "GATEWAY_CHECKOUT"
+        merchant_name = (notes.get("merchant_name") or "").strip()
+        customer_name = (notes.get("customer_name") or "").strip()
+        category = (notes.get("category") or "B2B" if "invoice" in event_type else "SaaS")
+        if not customer_name and not merchant_name and not source_ref:
+            # Nothing recognizable at all — fall back to checkout defaults
+            error_code = "GATEWAY_ERROR"
+            error_desc = "Transaction failed"
+            channel = "GATEWAY_CHECKOUT"
+            category = "SaaS"
 
-    merchant_name = notes.get("merchant_name", "Demo Merchant")
-    customer_name = notes.get("customer_name", "Siddharth Verma")
-    phone = notes.get("customer_phone", "+91-9876500000")
-    category = notes.get("category", "SaaS")
+    # Defensive defaults: partial / malformed webhook notes must never 500.
+    # Preset vars (merchant_name/customer_name/category) survive from the
+    # event-type branch above when the payload already provided them.
+    merchant_name = (merchant_name or notes.get("merchant_name") or "Demo Merchant").strip() or "Demo Merchant"
+    customer_name = (customer_name or notes.get("customer_name") or "Siddharth Verma").strip() or "Siddharth Verma"
+    phone = (notes.get("customer_phone") or "+91-9876500000").strip() or "+91-9876500000"
+    category = (category or notes.get("category") or "SaaS")
+    category = category.strip() if isinstance(category, str) else "SaaS"
+    category = category or "SaaS"
 
     # Resolve live issuer health behind the Mandate module seam.
     from ..interventions.mandate_sequencer import MandateRetrySequencer
@@ -160,7 +200,6 @@ async def handle_razorpay_webhook(req: Request):
         attempts_made=0,
         status=RecoveryStatus.AT_RISK
     )
-
     # Process through autonomous orchestrator
     audit_entry = await RecoveryOrchestrator.process_at_risk_transaction(txn, use_llm=True)
     return audit_entry

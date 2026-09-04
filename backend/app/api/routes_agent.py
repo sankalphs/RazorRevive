@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from typing import List, Dict, Any
+from typing import List
 from ..models.schemas import (
     ChatInteractionRequest,
     ChatInteractionResponse,

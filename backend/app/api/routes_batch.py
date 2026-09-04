@@ -1,4 +1,5 @@
 import threading
+import asyncio
 from fastapi import APIRouter
 from ..models.schemas import BatchSimulationRequest, BatchSummary
 from ..simulation.batch_runner import BatchSimulationEngine
@@ -21,12 +22,12 @@ def _set_latest(summary: BatchSummary) -> None:
         _latest_summary = summary
 
 
-# Back-compat alias: tests / tooling importing `latest_summary` still work.
-latest_summary: BatchSummary = None
+# Serializes cold-start simulation so concurrent first calls cannot
+# double-run the demo batch (the lock only guards the cache itself).
+_cold_start_lock = asyncio.Lock()
 
 @router.post("/simulate", response_model=BatchSummary)
 async def run_batch_simulation(req: BatchSimulationRequest):
-    global latest_summary
     # Cap batch size safely between 10 and 500
     safe_size = max(10, min(req.batch_size, 500))
     summary = await BatchSimulationEngine.run_batch_simulation(
@@ -35,16 +36,16 @@ async def run_batch_simulation(req: BatchSimulationRequest):
         enable_llm=req.enable_llm
     )
     _set_latest(summary)
-    latest_summary = _get_latest()
     return summary
 
 @router.get("/latest", response_model=BatchSummary)
 async def get_latest_batch():
-    global latest_summary
     cached = _get_latest()
     if not cached:
-        # Run a default realistic 100-txn batch on initial start
-        cached = await BatchSimulationEngine.run_batch_simulation(size=100, enable_llm=False)
-        _set_latest(cached)
-        latest_summary = cached
+        async with _cold_start_lock:
+            cached = _get_latest()
+            if not cached:
+                # Run a default realistic 100-txn batch on initial start
+                cached = await BatchSimulationEngine.run_batch_simulation(size=100, enable_llm=False)
+                _set_latest(cached)
     return cached

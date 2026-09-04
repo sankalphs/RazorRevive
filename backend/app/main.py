@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +16,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS configuration for frontend
+# CORS configuration for frontend. allow_credentials=True is incompatible
+# with a wildcard origin per the CORS spec (and Starlette would silently
+# echo any origin), so origins are explicit; the Vite dev server is added
+# when running in dev mode.
+_cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

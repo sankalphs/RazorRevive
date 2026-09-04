@@ -54,6 +54,15 @@ def get_current_ist_time() -> datetime:
     """Returns current time in Indian Standard Time (IST)."""
     return datetime.now(timezone.utc).astimezone(IST_OFFSET)
 
+
+def ist_timestamp() -> str:
+    """Single owner of '... IST' audit timestamp strings.
+
+    Every module that stamps an event as IST must read it here so the
+    label is true on any server timezone, not only on IST hosts.
+    """
+    return get_current_ist_time().strftime("%Y-%m-%d %H:%M:%S IST")
+
 def is_within_rbi_contact_hours(custom_time: Optional[datetime] = None) -> Tuple[bool, Optional[str]]:
     """
     RBI Compliance: Calling & SMS recovery communication must only happen

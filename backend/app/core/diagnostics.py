@@ -1,7 +1,7 @@
 import json
 import logging
 import httpx
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from ..config import GMI_BASE_URL, GMI_API_KEY, GMI_MODEL
 from ..models.schemas import (
     AtRiskTransaction,

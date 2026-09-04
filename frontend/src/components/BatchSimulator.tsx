@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Play, Loader2, CheckCircle2, MinusCircle } from 'lucide-react';
 import { type BatchSummary, runBatchSimulation } from '../services/api';
 import { PanelHeader, formatINR, humanizeIntervention } from './telemetry';
 
 /* ============================================================
-   SIMULATION — configure a batch, run it, read the honest
+   SIMULATION â€” configure a batch, run it, read the honest
    comparison against naive retries. One primary button.
    ============================================================ */
 
@@ -37,7 +37,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
       onSimulationComplete(result);
     } catch (err) {
       console.error('Batch simulation error:', err);
-      setError('The simulation could not run. Check that the backend is running on port 8000, then try again.');
+      setError('The simulation could not run. Check that the backend is running (`python run.py`), then try again.');
     } finally {
       setIsRunning(false);
     }
@@ -52,7 +52,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
       <section className="bg-white border border-line rounded-xl shadow-card" aria-label="Run a simulation">
         <PanelHeader
           title="Run a recovery simulation"
-          subtitle="Process a batch of failed payments through the AI engine — diagnosis, safety checks, then the right recovery action for each one."
+          subtitle="Process a batch of failed payments through the AI engine â€” diagnosis, safety checks, then the right recovery action for each one."
         />
 
         <div className="px-5 pb-5 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-end">
@@ -113,10 +113,10 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
                       : 'border-line-strong text-ink-2 bg-white hover:bg-wash'
                   }`}
                 >
-                  {useLLM ? 'MiniMax-M3 LLM: on' : 'LLM off — using rule-based fallback'}
+                  {useLLM ? 'MiniMax-M3 LLM: on' : 'LLM off â€” using rule-based fallback'}
                 </button>
                 <span className="text-[12.5px] text-ink-3">
-                  Recovery never blocks — if the LLM is off, a rule map diagnoses instead.
+                  Recovery never blocks â€” if the LLM is off, a rule map diagnoses instead.
                 </span>
               </div>
             </div>
@@ -136,7 +136,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
               {isRunning ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Running…
+                  Runningâ€¦
                 </>
               ) : (
                 <>
@@ -146,7 +146,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
               )}
             </button>
             <div className="mt-2 text-[12px] text-ink-3 text-center numeric">
-              {batchSize} failed payments · {verticals.length} business types
+              {batchSize} failed payments Â· {verticals.length} business types
             </div>
           </div>
         </div>
@@ -176,7 +176,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-[13px] font-medium text-ink">RazorRevive AI</span>
                 <span className="text-[13px] font-medium text-ok numeric">
-                  {aiPct.toFixed(1)}% · {formatINR(summary?.total_recovered_ai)}
+                  {aiPct.toFixed(1)}% Â· {formatINR(summary?.total_recovered_ai)}
                 </span>
               </div>
               <div className="h-2.5 bg-wash rounded-full overflow-hidden">
@@ -191,7 +191,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-[13px] font-medium text-ink-3">Basic retries + generic email</span>
                 <span className="text-[13px] font-medium text-ink-3 numeric">
-                  {basePct.toFixed(1)}% · {formatINR(summary?.total_recovered_baseline)}
+                  {basePct.toFixed(1)}% Â· {formatINR(summary?.total_recovered_baseline)}
                 </span>
               </div>
               <div className="h-2.5 bg-wash rounded-full overflow-hidden">
@@ -206,7 +206,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
               {[
                 { label: 'Extra recovered', value: `+${formatINR(summary?.incremental_lift_rupees)}`, cls: 'text-ok' },
                 { label: 'Running cost', value: formatINR(summary?.total_operational_cost), cls: 'text-ink' },
-                { label: 'Return on cost', value: `${summary?.roi_multiplier?.toFixed(0) ?? 0}×`, cls: 'text-ok' },
+                { label: 'Return on cost', value: `${summary?.roi_multiplier?.toFixed(0) ?? 0}Ã—`, cls: 'text-ok' },
               ].map((cell) => (
                 <div key={cell.label} className="px-4 py-3 bg-white">
                   <div className="text-[12px] text-ink-3">{cell.label}</div>
@@ -228,7 +228,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
         <section className="bg-white border border-line rounded-xl shadow-card" aria-label="Actions taken">
           <PanelHeader
             title="Actions the engine took"
-            subtitle="Every payment gets exactly one action. Stopped items are the safety rules working — they prevent spam, penalties and customer churn."
+            subtitle="Every payment gets exactly one action. Stopped items are the safety rules working â€” they prevent spam, penalties and customer churn."
           />
           {summary?.interventions_breakdown && Object.keys(summary.interventions_breakdown).length > 0 ? (
           <div className="px-5 pb-5">
@@ -262,7 +262,7 @@ export const BatchSimulator = ({ summary, onSimulationComplete }: BatchSimulator
             </div>
 
             <p className="mt-4 text-[12.5px] text-ink-3 leading-relaxed">
-              Permanent failures — expired cards, fraud flags, closed accounts — are left alone
+              Permanent failures â€” expired cards, fraud flags, closed accounts â€” are left alone
               entirely: no retries, no contact, inside RBI's allowed contact hours.
             </p>
           </div>

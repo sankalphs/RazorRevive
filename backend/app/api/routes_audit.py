@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, Response
 from typing import List, Optional
 from ..models.schemas import AuditLogEntry, RecoveryStatus, InterventionType, FailureCategory
 from ..core.audit_logger import audit_logger
+from ..core.engine import DeferralQueue
 
 router = APIRouter(prefix="/api/audit", tags=["Audit Trail"])
 
@@ -33,6 +34,11 @@ async def download_audit_csv():
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=razorrevive_audit_trail.csv"}
     )
+
+@router.get("/deferred")
+async def get_deferred_queue():
+    """Live view of actions parked for the next RBI contact window."""
+    return await DeferralQueue.snapshot()
 
 @router.get("/stats")
 async def get_audit_stats():
