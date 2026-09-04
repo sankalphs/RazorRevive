@@ -143,7 +143,7 @@ class HinglishRecoveryAgent:
             return "DND_OPTOUT"
         if check_customer_hardship(lower):
             return "HARDSHIP_PAUSE"
-        if any(k in lower for k in ["already paid", "ho gaya", "kat gaya", "cut gaye", "dispute", "fraud"]):
+        if any(k in lower for k in ["already paid", "already pay", "kat gaya", "cut gaye", "paise kat", "paise cut", "dispute", "fraud", "double pay", "dobara pay", "charge ho gaya tha", "deduct ho gaya"]):
             return "DISPUTE_CLAIMED"
         if any(k in lower for k in ["kal", "parson", "shaam", "tomorrow", "later", "salary", "baad me", "after"]):
             return "PROMISE_TO_PAY"

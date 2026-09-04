@@ -31,6 +31,8 @@ export const AuditTrailTable = () => {
         setFailed(true);
         setLoading(false);
       });
+    // search is intentionally excluded: typing does not auto-fetch; press Enter or Search button instead
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, interventionFilter]);
 
   const applySearch = () => {
@@ -78,6 +80,13 @@ export const AuditTrailTable = () => {
             onKeyDown={(e) => e.key === 'Enter' && applySearch()}
             className="field pl-8 pr-3 py-1.5 text-[13px] w-60 caret-accent"
           />
+          <button
+            onClick={applySearch}
+            aria-label="Search"
+            className="px-3 py-1.5 text-[13px] font-medium rounded-lg border border-line-strong text-ink-2 hover:bg-wash hover:text-ink transition-colors"
+          >
+            Search
+          </button>
         </div>
         <select
           value={statusFilter}

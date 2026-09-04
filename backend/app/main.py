@@ -51,7 +51,11 @@ if FRONTEND_DIST.exists():
     async def serve_spa(full_path: str):
         file_path = (FRONTEND_DIST / full_path).resolve()
         # Prevent path traversal: only serve files inside the dist directory
-        if str(file_path).startswith(str(FRONTEND_DIST.resolve())) and file_path.is_file():
+        try:
+            file_path.relative_to(FRONTEND_DIST.resolve())
+        except ValueError:
+            return FileResponse(FRONTEND_DIST / "index.html")
+        if file_path.is_file():
             return FileResponse(file_path)
         return FileResponse(FRONTEND_DIST / "index.html")
 

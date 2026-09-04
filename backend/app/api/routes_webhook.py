@@ -89,13 +89,19 @@ async def handle_razorpay_webhook(req: Request):
     Ingests and recovers live Razorpay webhooks in real-time.
     Supports payment.failed, subscription.halted, order.paid, invoice.overdue.
     """
-    body: Dict[str, Any] = await req.json()
+    try:
+        body: Dict[str, Any] = await req.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload. Send a valid Razorpay webhook object.")
     event_type = body.get("event", "payment.failed")
     payload = body.get("payload", {})
     
     # Extract entity details safely
     if "payment" in payload:
         entity = payload["payment"].get("entity", {})
+        # Preserve the caller's payment id so ledger entries correlate
+        # 1:1 with the source webhook.
+        source_ref = entity.get("id")
         amount = float(entity.get("amount", 100000)) / 100.0  # paise to INR
         error_code = entity.get("error_code", "GATEWAY_ERROR")
         error_desc = entity.get("error_description", "Payment transaction failed")
@@ -104,6 +110,7 @@ async def handle_razorpay_webhook(req: Request):
         channel = "UPI_AUTOPAY" if entity.get("method") == "upi" else "CARD_MANDATE"
     elif "subscription" in payload:
         entity = payload["subscription"].get("entity", {})
+        source_ref = entity.get("id")
         notes = entity.get("notes", {})
         amount = float(notes.get("amount", 999.0))
         error_code = notes.get("error_code", "INSUFFICIENT_FUNDS")
@@ -114,6 +121,7 @@ async def handle_razorpay_webhook(req: Request):
         # Fallback generic parsing
         entity = {}
         notes = {}
+        source_ref = None
         amount = 1499.0
         error_code = "GATEWAY_ERROR"
         error_desc = "Transaction failed"
@@ -130,9 +138,9 @@ async def handle_razorpay_webhook(req: Request):
     bank_health = MandateRetrySequencer.get_bank_health(bank)
     bank_uptime = bank_health.get("uptime_pct", 94.0)
 
-    # Build internal AtRiskTransaction
+    # Build internal AtRiskTransaction (keep the source id when present)
     txn = AtRiskTransaction(
-        id=f"txn_{uuid.uuid4().hex[:12]}",
+        id=source_ref or f"txn_{uuid.uuid4().hex[:12]}",
         merchant_id=f"merch_{merchant_name.lower().replace(' ', '_')}",
         merchant_name=merchant_name,
         merchant_category=category,
